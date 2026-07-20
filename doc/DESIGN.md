@@ -78,16 +78,25 @@ This is the hard leg. Napper offers no sanctioned integration: no public API, no
 
 What the screen shows (research-napper §4): the home screen has a central countdown "First nap in 3 min" (a React Native `<Text>`, so likely readable by an Android AccessibilityService) plus absolute clock labels around the ring ("10:07", "19:54", likely custom-Canvas drawn so likely not readable). Reading the central countdown and computing `now + X` yields the absolute next-event time; a single read is enough until the next refresh, so a few reads a day suffice.
 
-### The dedicated-device approach
+### Reading approaches, least extra hardware first
 
-The reader (a small custom AccessibilityService app, or Tasker/MacroDroid + AutoInput) can only read Napper while it is in the foreground. Rather than interrupt the user's main phone, run Napper on a dedicated always-on device left plugged in with the app open. Device options:
+The reader can only read Napper while it is rendered (foreground, or a visible secondary/split window). All of these need the on-screen text to be reachable; see the gate at the end. Same-phone options (1-4) also collapse Leg 1 and Leg 2 onto one device: the reader fires the watch write directly, no relay.
 
-- A cheap old physical Android phone — the reliable choice. It logs in and runs Napper normally, with no Play-certification issues, and just stays on.
-- An Android environment on an always-on machine (emulator, or Waydroid on the user's Linux box). Caveat to verify: Napper relies on Google sign-in and Play services, and Google Play Integrity commonly blocks sign-in or the app on uncertified GMS (Waydroid, stock emulators). Feasible for some apps, but confirm Napper actually logs in there before committing; the physical phone avoids this entirely.
+1. Same phone, event-driven read (zero extra hardware, zero disruption, no relay). An AccessibilityService (a small custom app, or Tasker/MacroDroid + AutoInput) fires whenever the user themselves opens Napper — which a parent does several times a day — reads "First nap in X" + type, computes the absolute time, and writes to the watch. No scheduled screen takeover. Coverage depends on how often the app is opened; the watch value expires if it goes stale, which is acceptable. This is the lightest option and the recommended starting point.
 
-The relay wrinkle: the watch stays BLE-paired to the phone the user carries (a stationary reader goes out of range when the user leaves). So the dedicated reader must relay the computed time to the carried phone, which then fires the Gadgetbridge BLE write (Leg 2). That relay is a small extra piece (a push channel between the two devices, e.g. ntfy/MQTT/HTTP or a Tasker-to-Tasker link); the carried phone writes to the watch whenever it is in range.
+2. Same phone, scheduled foreground read (zero extra hardware, brief disruption, no relay). Tasker/MacroDroid periodically launches Napper, reads, and returns to the previous screen. Guarantees freshness but momentarily hijacks the screen; gate it to low-disruption moments (screen already on and idle, on charger) to soften that. Good as a top-up to option 1.
 
-Open check before committing (research-napper §6): confirm the on-screen "First nap in X" is actually exposed as a readable accessibility text node (`adb shell uiautomator dump` while Napper is foreground). Likely yes given React Native, but it gates the whole approach.
+3. Same phone, screenshot + on-device OCR (zero extra hardware, no relay). If the text is not in the accessibility tree, MediaProjection screenshots Napper and on-device OCR (e.g. ML Kit) reads the pixels — this can read the canvas-drawn absolute ring labels that accessibility can't. Needs a one-time screen-capture permission grant (kept alive by a foreground service). The fallback when the gate below fails.
+
+4. Same phone, keep Napper permanently readable via a secondary/virtual display or split-screen (zero extra hardware, no relay, experimental). Host Napper on a virtual display or pinned split-screen so its window is always in the accessibility tree without taking over the main screen. Fiddly and version/app-dependent (needs Napper to tolerate multi-window / secondary display); verify before relying on it.
+
+5. Existing always-on computer running Android (no new hardware if a machine is already on, but adds a relay). Waydroid or an emulator on the user's Linux box runs Napper; a script reads it via adb/uiautomator and relays the value to the carried phone. Caveats: Napper must sign in there (Google Play Integrity commonly blocks sign-in on uncertified GMS — verify first), the machine must stay on, and the relay wrinkle below applies.
+
+6. Dedicated second physical phone (most extra hardware: a device + cable + relay). An old phone left plugged in with Napper open, reading and relaying. Most reliable and fully decoupled from the daily phone, but the heaviest setup.
+
+The relay wrinkle (options 5-6 only): the watch stays BLE-paired to the phone the user carries, so a stationary reader must relay the computed time to that phone (a small push channel: ntfy/MQTT/HTTP or a Tasker-to-Tasker link), which then fires the Gadgetbridge write. Same-phone options avoid this entirely.
+
+The gate (all options): confirm the on-screen "First nap in X" is a readable accessibility text node (`adb shell uiautomator dump` while Napper is foreground). Likely yes given React Native; if not, option 3 (OCR) is the fallback.
 
 ### Recommendation: decouple Leg 1 from Legs 2 and 3
 
@@ -105,7 +114,7 @@ Poor prospects; plan for a personal fork. InfiniTime's vision doc favors minimal
 
 ## Open decisions and on-device checks
 
-Leg 1 direction (leaning: dedicated-device on-screen reading): run Napper on a dedicated always-on device and read its on-screen next-event text, relaying the value to the carried phone for the watch write. Open sub-choice: a cheap physical old phone (reliable) vs. an emulator / Waydroid on an always-on machine (verify Play Integrity lets Napper sign in there first).
+Leg 1 direction (read Napper's on-screen next-event text; prefer the least hardware): start with a same-phone reader triggered when the app is opened (option 1), topped up with a scheduled read (option 2) if freshness needs it, with OCR (option 3) as the fallback if the text isn't accessibility-readable. Off-device options (existing always-on machine, or a dedicated phone) are the fallback if same-phone proves too fragile. See "Reading approaches, least extra hardware first" above.
 
 Sequencing: build Legs 2 and 3 (transport + watch corner) first against a dummy source, decoupled from Leg 1? Recommended, so a working watch feature never waits on the reading problem.
 

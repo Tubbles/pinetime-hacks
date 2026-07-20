@@ -6,7 +6,7 @@ Design: `doc/DESIGN.md`. Research: `doc/research-{infinitime,napper,gadgetbridge
 
 Napper extraction (Leg 1) is the hard part; the notification path is dead (notifications carry no time, user-confirmed) and Napper offers no API, web client, or widget. The schedule appears only on the app's own screen. See `doc/DESIGN.md` Leg 1 and `doc/research-napper.md`.
 
-Direction (leaning): read Napper's on-screen next-event text on a dedicated always-on device and relay the value to the carried phone for the watch write. Open sub-choice: a cheap physical old phone (reliable) vs. an emulator / Waydroid on an always-on machine (verify Play Integrity lets Napper sign in there first).
+Direction (read Napper's on-screen next-event text; prefer least hardware): favor a same-phone reader (option 1: fire when the app is opened; option 2: scheduled top-up; option 3: OCR fallback) over off-device readers (existing always-on machine, or a dedicated phone, which add a relay). Ranked in `doc/DESIGN.md` Leg 1.
 
 Sequencing (recommended): build Legs 2+3 first against a dummy source so the watch feature isn't blocked on Leg 1.
 
@@ -21,7 +21,7 @@ Firmware decisions with a recommended default:
 Implementation legs:
 - Firmware: add `NextEventService` BLE service (`00060000-...`, modeled on SimpleWeatherService); wire through NimbleController / SystemTask / DisplayApp / AppControllers; render `HH:MM` in the G7710 corner when HR is Stopped. Buildable now against a dummy source.
 - Transport: enable Gadgetbridge BLE Intent API on the device; re-pair the watch after the characteristic is added (GATT service-discovery cache); re-send on `BLUETOOTH_CONNECTED`. Buildable/testable now.
-- Extraction (Leg 1): read Napper's on-screen next-event text on a dedicated device and relay it to the carried phone.
+- Extraction (Leg 1): same-phone AccessibilityService reader that fires when Napper is opened, computes the absolute time, and writes to the watch (OCR fallback if the text isn't in the accessibility tree).
 - Build/flash: build `pinetime-mcuboot-app-dfu` via the official Docker image; OTA via Gadgetbridge's File Installer; do not Validate until BLE reconnect + reboot survive.
 - Consider adding InfiniSim as a submodule for hardware-free UI iteration on the face.
 
