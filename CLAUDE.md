@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Personal hacking playground for a PineTime smartwatch running InfiniTime, paired to an Android phone running Gadgetbridge. The first undertaking: show the "time of next event" in the bottom-left corner of the Casio G7710 watch face (where the heart-rate BPM indicator lives) whenever heart rate is not in use. The initial event source is the Napper baby-sleep app (com.napper) on the phone — its predicted next sleep/wake time — delivered to the watch automatically, with no manual input. Other sources (next alarm, calendar) are deliberately out of scope for now.
+Personal hacking playground for a PineTime smartwatch running InfiniTime, paired to an Android phone (GrapheneOS) running Gadgetbridge. The repo hosts several planned features, worked one at a time; `TODO.md` tracks which is active and what is parked. Current and planned undertakings:
+
+1. Clock sync (active) — sync the GrapheneOS clock app's (`com.android.deskclock`) stopwatch and timer with the watch, both directions, with both running in the background on the watch.
+2. Scheduled brightness + silent mode — on a watch-configured schedule, switch brightness and toggle silent mode (e.g. dim + silent at night).
+3. Wrist-raise lock — waking via raise-wrist shows the screen but rejects touch until the physical button is pressed; likely a lock indicator on the Casio G7710 face.
+4. Next-event corner (parked) — show a "time of next event" (Napper next sleep/wake) in the G7710 bottom-left corner. Parked pending outreach to Napper AB.
+
+Per-feature design docs live in `doc/` (e.g. `doc/DESIGN.md` for the next-event corner). The user is open to forking and extending upstream projects (InfiniTime, the Android clock app, possibly Gadgetbridge) with this repo as the master, using git submodules for the upstream trees.
 
 Hardware context that shapes everything: the watch is **sealed** (no SWD access), so flashing is OTA/DFU-only via Gadgetbridge. Firmware safety (bootloader intact, validation/rollback flow understood) is a hard requirement before any flash. Record findings about this in `doc/LOG.md`.
 

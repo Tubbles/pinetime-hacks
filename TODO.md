@@ -1,28 +1,25 @@
 # To Do
 
-## Next-event watch face corner (active undertaking)
+The repo is a personal PineTime/InfiniTime hacking playground with several planned features. One is worked at a time. Active: idea 1 (clock sync). See `doc/DESIGN.md` for per-feature design docs.
 
-Design: `doc/DESIGN.md`. Research: `doc/research-{infinitime,napper,gadgetbridge}.md`.
+## Active: 1. Clock stopwatch + timer sync (GrapheneOS clock <-> PineTime)
 
-Napper extraction (Leg 1) is the hard part; the notification path is dead (notifications carry no time, user-confirmed) and Napper offers no API, web client, or widget. The schedule appears only on the app's own screen. See `doc/DESIGN.md` Leg 1 and `doc/research-napper.md`.
+Sync the GrapheneOS clock app (`com.android.deskclock`) stopwatch and timer with the watch: start, stop, and see both from phone and watch. Both must run in the background on the watch (keep counting/firing when not on the Timer/StopWatch screen). Open to forking and extending both the Android app and InfiniTime, with this repo as the master (git submodules).
 
-Direction (read Napper's on-screen next-event text; prefer least hardware): favor a same-phone reader (option 1: fire when the app is opened; option 2: scheduled top-up; option 3: OCR fallback) over off-device readers (existing always-on machine, or a dedicated phone, which add a relay). Ranked in `doc/DESIGN.md` Leg 1.
+Design doc: `doc/DESIGN-clock-sync.md` (to be written after research). Research in progress (InfiniTime timer/stopwatch + background execution; deskclock internals + fork surface; Gadgetbridge bidirectional transport).
 
-Sequencing (recommended): build Legs 2+3 first against a dummy source so the watch feature isn't blocked on Leg 1.
+## Planned: 2. Scheduled brightness + silent mode
 
-On-device checks (only the user can answer):
-- Accessibility exposure: with Napper foreground, is "First nap in 3 min" (and the bottom-bar "10:07") a readable text node? (`adb shell uiautomator dump` / Layout Inspector / Accessibility Scanner.) Decides whether the on-screen reading approach is viable.
-- Do you use InfiniTime continuous/background heart-rate measurement? (Decides whether "HR state == Stopped" is a usable trigger.)
+On a schedule configured entirely on the watch (no hard-coded times), switch screen brightness and toggle silent mode. Example: at 20:00 go to lowest brightness + silent; at 07:00 go to middle brightness + full noise. Configuration lives on the watch.
 
-Firmware decisions with a recommended default:
-- Firmware: modify the existing G7710 face (recommended) vs. add a new face.
-- Settings toggle: hard-code for v1 (recommended) vs. a `Settings` option.
+## Planned: 3. Wrist-raise shows a locked screen (touch rejected until button)
 
-Implementation legs:
-- Firmware: add `NextEventService` BLE service (`00060000-...`, modeled on SimpleWeatherService); wire through NimbleController / SystemTask / DisplayApp / AppControllers; render `HH:MM` in the G7710 corner when HR is Stopped. Buildable now against a dummy source.
-- Transport: enable Gadgetbridge BLE Intent API on the device; re-pair the watch after the characteristic is added (GATT service-discovery cache); re-send on `BLUETOOTH_CONNECTED`. Buildable/testable now.
-- Extraction (Leg 1): same-phone AccessibilityService reader that fires when Napper is opened, computes the absolute time, and writes to the watch (OCR fallback if the text isn't in the accessibility tree).
-- Build/flash: build `pinetime-mcuboot-app-dfu` via the official Docker image; OTA via Gadgetbridge's File Installer; do not Validate until BLE reconnect + reboot survive.
-- Consider adding InfiniSim as a submodule for hardware-free UI iteration on the face.
+Waking the screen via raise-wrist should show the screen but reject touch input, like a lock screen, until the physical button is pressed to fully unlock (prevents accidental touches). Likely needs a lock indicator on the watch face; the Casio G7710 bottom-left corner is free to use for it (the BPM indicator there is expendable).
+
+## Parked: next-event watch face corner (Napper)
+
+Design: `doc/DESIGN.md`, research: `doc/research-{infinitime,napper,gadgetbridge}.md`.
+
+Parked pending the user reaching out to Napper AB about cooperation / their thoughts. Standing finding: Napper offers no API, web client, widget, or notification carrying the time, so the only avenue was reading the app's on-screen output (ranked approaches in `doc/DESIGN.md` Leg 1). Nothing to do here until the outreach resolves.
 
 ## User written inbox

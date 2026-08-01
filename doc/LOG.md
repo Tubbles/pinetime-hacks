@@ -36,6 +36,13 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - Direction: read the app's on-screen output on a device the user controls and push the value to the watch. Leaning toward a dedicated always-on device (a cheap old phone, or an Android environment on an always-on machine — verify Play Integrity lets Napper sign in there). The watch stays paired to the carried phone, so a stationary reader must relay the value to it. See DESIGN.md Leg 1.
 - Decoupling decision (DESIGN.md): build Legs 2+3 (transport + watch corner) first against a dummy source so the watch feature never blocks on Leg 1.
 
+## [init] 2026-08-01 — Napper parked; pivot to clock sync
+
+- Napper next-event corner parked pending the user reaching out to Napper AB about cooperation. The ToS-circumvention deliberation was scrubbed from the docs and git history earlier (branch history rewritten, reflog expired, gc pruned; no remote, nothing pushed).
+- New focus, worked one idea at a time (see TODO.md): (1) sync the GrapheneOS clock app stopwatch+timer with the watch, both running in the background on the watch; (2) watch-configured scheduled brightness + silent mode; (3) wrist-raise shows a locked screen that rejects touch until the button is pressed.
+- Repo is now the master for a multi-feature project; upstream trees (InfiniTime already, the Android clock app and possibly Gadgetbridge to come) are git submodules.
+- Research started for idea 1: InfiniTime timer/stopwatch internals + background execution model, deskclock internals + fork/extend surface, Gadgetbridge bidirectional transport.
+
 ## [flash] 2026-07-19 — sealed-watch OTA is low-risk
 
 - DFU writes to a secondary SPI-flash slot; bootloader swaps + runs unvalidated; reset-before-Validate rolls back; ~7 s watchdog catches a hung image; physical button gives blue=rollback / red=recovery firmware. OTA never touches the bootloader. Rule: never tap Validate until BLE reconnects and a reboot survives with the new corner working.
