@@ -10,9 +10,11 @@ Design doc: `doc/DESIGN-clock-sync.md`. Research done. Key findings: both run in
 
 Decisions (resolved): fork the clock app (renamed, user-installed) and run it as the daily clock; both stopwatch and timer; device is on Android 17 (DeskClock submodule at `deskclock/`, branch `17`); button must back out while running; reuse the existing watch StopWatch/Timer screens.
 
-Implementation outline:
-- Firmware: promote `Controllers::Timer` to a `main.cpp` global; add a ClockSync BLE service `00070000-...` (control WRITE `00070001` + state NOTIFY `00070002`), notify-on-mutate with echo suppression. StopWatch/Alarm already reachable; both already run in the background.
-- Firmware (button): remove `StopWatch::OnButtonPushed()` (`StopWatch.cpp:246`, decl `StopWatch.h:31`) so the physical button backs out to the watch face while the stopwatch keeps running (Timer already does this). Pause stays on the on-screen play/pause button.
+Implementation (firmware leg, on the InfiniTime submodule `clock-sync` branch, base 1.16.1):
+- DONE (73916a83): remove `StopWatch::OnButtonPushed()` so the physical button backs out to the watch face while the stopwatch keeps running (Timer already did this). Pause stays on the on-screen play/pause button.
+- DONE (77531c3e, build-verified): promote `Controllers::Timer` to a `main.cpp` global via a late `Init()` from DisplayApp, so a BLE service can reach it (StopWatch/Alarm already global). No behavior change.
+- TODO: add the ClockSync BLE service `00070000-...` (control WRITE `00070001` + state NOTIFY `00070002`), wired through SystemTask/NimbleController/AppControllers; notify-on-mutate in StopWatchController + Timer with echo suppression; payload = full state snapshot with wall-clock reference.
+- Build: `podman run --rm -e DISABLE_POSTBUILD=true --userns=keep-id --security-opt label=disable -v <InfiniTime>:/sources docker.io/infinitime/infinitime-build /opt/build.sh pinetime-app` (rootless podman needs `--userns=keep-id`).
 - Transport: enable both BLE Intent API toggles on the PineTime in Gadgetbridge, filter to the ClockSync UUIDs + the fork's package, reconnect + re-add to clear the GATT cache.
 - Phone: fork the `deskclock/` submodule (rename package, port to Gradle), add a bridge (DataModel listeners -> CHARACTERISTIC_WRITE; CHARACTERISTIC_CHANGED receiver -> DataModel), sync full snapshots with wall-clock references.
 - Build/flash firmware via the Docker image; OTA via Gadgetbridge; don't Validate until reconnect + reboot survive.

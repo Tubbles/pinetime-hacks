@@ -52,6 +52,13 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - Vendor service ID: ClockSync = `00070000-...`; `0006` reserved for the parked Napper next-event service.
 - Sync design: state transitions + wall-clock reference only (InfiniTime RTC is CTS-synced), full idempotent snapshots, last-writer-wins, resend-on-connect; never per-tick.
 
+## [build][infinitime] 2026-08-01 — firmware leg started; build env notes
+
+- Forks based on latest upstream releases: InfiniTime 1.16.1 (already the latest; work on submodule branch `clock-sync`), DeskClock branch `17`.
+- Build via the official image with rootless podman: `podman run --rm -e DISABLE_POSTBUILD=true --userns=keep-id --security-opt label=disable -v <InfiniTime>:/sources docker.io/infinitime/infinitime-build /opt/build.sh pinetime-app`. Two gotchas: the image CMD is `/opt/build.sh` (pass the target as its arg, e.g. `/opt/build.sh pinetime-app`; a bare target arg replaces the CMD and fails with "executable not found"); and rootless podman needs `--userns=keep-id` or the bind-mounted `/sources/build` mkdir fails with EPERM (the InfiniTime docs assume Docker, where plain `--user` works). Toolchain (GCC, nRF SDK, mcuboot) is baked into the image, so builds are offline. `pinetime-app` + `DISABLE_POSTBUILD=true` is the fast compile-check (skips DFU zip + resources/npm).
+- Editing a header mid-build gives a spurious link error (stale .o built from old sources); just re-run the incremental build.
+- Done + build-verified: StopWatch button back-out (73916a83) and Timer-to-global refactor (77531c3e). ClockSync BLE service is next.
+
 ## [infinitime] 2026-08-01 — StopWatch captures the physical button (must change)
 
 - User requirement: pressing the button while the stopwatch/timer runs must back out to the watch face and keep it running in the background.
