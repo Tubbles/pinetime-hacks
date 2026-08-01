@@ -29,7 +29,9 @@ On a schedule configured entirely on the watch (no hard-coded times), switch scr
 
 ## Planned: 3. Wrist-raise shows a locked screen (touch rejected until button)
 
-Waking the screen via raise-wrist should show the screen but reject touch input, like a lock screen, until the physical button is pressed to fully unlock (prevents accidental touches). Likely needs a lock indicator on the watch face; the Casio G7710 bottom-left corner is free to use for it (the BPM indicator there is expendable).
+Waking the screen via raise-wrist should show the screen but reject touch input, like a lock screen, until the physical button is pressed to fully unlock (prevents accidental touches). Lock indicator goes in the Casio G7710 bottom-left corner (the BPM slot).
+
+Design: `doc/DESIGN-lock-screen.md` (ready to implement). A single `locked` flag in SystemTask plus three small hooks (set on raise-from-sleep, reject touch, unlock on button) and a G7710 indicator. Decisions worth confirming before building: clear the lock when an alarm fires (recommended, so alarms can still be silenced), keep notifications view-only while locked, and accept that a raise-wake onto a non-watchface app blocks touch but shows no indicator there (v1).
 
 ## Planned: 5. Extended-Latin (åäö) in watch notifications
 
