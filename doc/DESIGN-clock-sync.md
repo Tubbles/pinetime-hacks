@@ -57,6 +57,32 @@ Timer already behaves this way: it does not override the button, so a press does
 
 StopWatch does NOT behave this way today and must be changed. `StopWatch::OnButtonPushed()` (`src/displayapp/screens/StopWatch.cpp:246-252`) currently, when running, calls `OnPause()` and returns `true` — so the button pauses the stopwatch and consumes the press, keeping you in the app. That is exactly the interference to remove. Fix: drop the override (delete the method and its declaration at `StopWatch.h:31`) so the button falls through to the default back-navigation while `StopWatchController` keeps counting. Pausing remains available via the on-screen play/pause button (`PlayPauseBtnEventHandler`). This capture was a holdover from when stopwatch state lived in the screen; with the survives-navigation controller it is no longer needed.
 
+### ClockSync wire protocol (v1)
+
+The shared contract between the InfiniTime service and the phone-side fork. One fixed 16-byte little-endian frame is used on both characteristics (symmetric: the phone writes a desired state to Control, the watch notifies its actual state on State).
+
+- Service `00070000-78fc-48fe-8e23-433b3a1942d0`.
+- Control `00070001` — WRITE. Phone -> watch command frame.
+- State `00070002` — NOTIFY + READ. Watch -> phone state frame, emitted on any watch-side change; readable on demand.
+
+Frame layout:
+- `[0]` version = 1.
+- `[1]` domain: 0 = stopwatch, 1 = timer.
+- `[2]` state: stopwatch { 0 cleared, 1 running, 2 paused }; timer { 0 stopped, 1 running, 2 expired }.
+- `[3]` reserved, 0.
+- `[4..7]` uint32 value_ms.
+- `[8..15]` int64 reference_epoch_ms (UTC milliseconds; InfiniTime's RTC is CTS-synced so both sides share this base).
+
+Semantics (each side computes live time locally, so no per-tick traffic):
+- Stopwatch running: `reference_epoch_ms` = now - current_elapsed (a "start-equivalent" wall time); consumer renders `elapsed = now - reference`. `value_ms` unused.
+- Stopwatch paused: `value_ms` = frozen elapsed ms; `reference` unused.
+- Stopwatch cleared: both unused.
+- Timer running: `reference_epoch_ms` = expiry wall time; consumer renders `remaining = reference - now`. `value_ms` = original duration (for total display).
+- Timer stopped: `value_ms` = last configured duration; `reference` unused.
+- Timer expired: state = 2.
+
+v1 limitations (documented, revisit later): InfiniTime's timer has no pause, so a phone-side timer pause maps to stopped with the remaining duration; stopwatch laps are not synced.
+
 ## Leg 2 — Transport (stock Gadgetbridge, >=0.82.0; prefer >=0.84.0)
 
 The BLE Intent API carries both directions (verified against `BleIntentApi.java`, `AbstractBTLESingleDeviceSupport.java`):
