@@ -63,7 +63,7 @@ The shared contract between the InfiniTime service and the phone-side fork. One 
 
 - Service `00070000-78fc-48fe-8e23-433b3a1942d0`.
 - Control `00070001` — WRITE. Phone -> watch command frame.
-- State `00070002` — NOTIFY + READ. Watch -> phone state frame, emitted on any watch-side change; readable on demand.
+- State `00070002` — NOTIFY. Watch -> phone state frame, emitted on any watch-side change. (v1 firmware: NOTIFY only; READ not implemented, matching the MusicService precedent. Add READ later if the phone needs to poll current state on connect.)
 
 Frame layout:
 - `[0]` version = 1.

@@ -59,6 +59,16 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - Editing a header mid-build gives a spurious link error (stale .o built from old sources); just re-run the incremental build.
 - Done + build-verified: StopWatch button back-out (73916a83) and Timer-to-global refactor (77531c3e). ClockSync BLE service is next.
 
+## [infinitime] 2026-08-01 — ClockSync firmware service complete (build-verified)
+
+- ClockSync BLE service implemented on the `clock-sync` branch, bidirectional, compiles + links via `/opt/build.sh pinetime-app`. Two commits: cea26312 (service + phone->watch + notify infra) and 51dcfbf6 (watch->phone notify from the screens).
+- Design decisions made during implementation:
+  - Watch->phone notify is triggered from the StopWatch/Timer SCREEN action handlers (via `AppControllers.clockSyncService`, registered from SystemTask), not from inside the controllers. This is the InfiniTime-idiomatic seam (screens already call into music/weather services) and keeps the controllers decoupled from BLE.
+  - No echo suppression needed: phone->watch commands apply DIRECTLY to the controllers (from the service), never through the screens, so they don't re-trigger the screen notify path.
+  - Added `StopWatchController::SetState(bool running, TickType_t elapsed)` because the controller previously exposed only Start/Pause/Clear and couldn't restore a mid-run elapsed time for phone->watch sync. Timer needed no new method (StartTimer(remaining) re-arms it).
+  - State characteristic is NOTIFY-only in v1 (no READ), matching MusicService. Timer expiry is not notified (the phone derives it from the synced target epoch). Laps not synced.
+- Build gotcha: InfiniTime compiles with `-Werror=reorder`, so constructor init-list order must match member declaration order (tripped the Timer screen ctor once).
+
 ## [infinitime] 2026-08-01 — StopWatch captures the physical button (must change)
 
 - User requirement: pressing the button while the stopwatch/timer runs must back out to the watch face and keep it running in the background.
