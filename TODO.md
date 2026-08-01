@@ -8,16 +8,13 @@ Sync the GrapheneOS clock app (`com.android.deskclock`) stopwatch and timer with
 
 Design doc: `doc/DESIGN-clock-sync.md`. Research done. Key findings: both run in the background on the watch already; stock Gadgetbridge carries both directions (no GB fork); the clock app must be forked (renamed package, user-installed) for real control + exact times.
 
-Decisions pending (see the end of `doc/DESIGN-clock-sync.md`):
-- Confirm forking the clock app and running the renamed fork as the daily clock (stock can't expose what's needed).
-- Which GrapheneOS / Android version is the phone on? (Picks the `platform_packages_apps_DeskClock` submodule branch, e.g. `16-qpr2`.)
-- v1 scope: both stopwatch and timer (recommended) vs. one first.
+Decisions (resolved): fork the clock app (renamed, user-installed) and run it as the daily clock; both stopwatch and timer; device is on Android 17 (DeskClock submodule at `deskclock/`, branch `17`); button must back out while running; reuse the existing watch StopWatch/Timer screens.
 
 Implementation outline:
 - Firmware: promote `Controllers::Timer` to a `main.cpp` global; add a ClockSync BLE service `00070000-...` (control WRITE `00070001` + state NOTIFY `00070002`), notify-on-mutate with echo suppression. StopWatch/Alarm already reachable; both already run in the background.
+- Firmware (button): remove `StopWatch::OnButtonPushed()` (`StopWatch.cpp:246`, decl `StopWatch.h:31`) so the physical button backs out to the watch face while the stopwatch keeps running (Timer already does this). Pause stays on the on-screen play/pause button.
 - Transport: enable both BLE Intent API toggles on the PineTime in Gadgetbridge, filter to the ClockSync UUIDs + the fork's package, reconnect + re-add to clear the GATT cache.
-- Phone: fork `GrapheneOS/platform_packages_apps_DeskClock` (rename package, port to Gradle), add a bridge (DataModel listeners -> CHARACTERISTIC_WRITE; CHARACTERISTIC_CHANGED receiver -> DataModel), sync full snapshots with wall-clock references.
-- Add the clock app as a submodule once the device Android version is known.
+- Phone: fork the `deskclock/` submodule (rename package, port to Gradle), add a bridge (DataModel listeners -> CHARACTERISTIC_WRITE; CHARACTERISTIC_CHANGED receiver -> DataModel), sync full snapshots with wall-clock references.
 - Build/flash firmware via the Docker image; OTA via Gadgetbridge; don't Validate until reconnect + reboot survive.
 
 ## Planned: 2. Scheduled brightness + silent mode

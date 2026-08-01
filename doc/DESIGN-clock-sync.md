@@ -50,6 +50,13 @@ Emit-on-mutate: put the notify inside the controller mutators (`StopWatchControl
 ### Wiring cost
 One new service class (~MusicService size, a few hundred lines), the Timer-to-global refactor (touches `main.cpp`, DisplayApp ctor, SystemTask ctor, NimbleController ctor), and notify hooks in the two controllers. The existing StopWatch/Timer screens already render controller state, so external changes show up when a screen is open (push a refresh message if needed); no new watch screen for v1.
 
+### Physical-button behavior: back out while running (required)
+Requirement: pressing the physical button while the stopwatch or timer is running must back out of the app to the watch face and leave it running in the background, not stop or pause it.
+
+Timer already behaves this way: it does not override the button, so a press does the default back-navigation and the FreeRTOS timer keeps counting (and still fires in the background). No change needed.
+
+StopWatch does NOT behave this way today and must be changed. `StopWatch::OnButtonPushed()` (`src/displayapp/screens/StopWatch.cpp:246-252`) currently, when running, calls `OnPause()` and returns `true` — so the button pauses the stopwatch and consumes the press, keeping you in the app. That is exactly the interference to remove. Fix: drop the override (delete the method and its declaration at `StopWatch.h:31`) so the button falls through to the default back-navigation while `StopWatchController` keeps counting. Pausing remains available via the on-screen play/pause button (`PlayPauseBtnEventHandler`). This capture was a holdover from when stopwatch state lived in the screen; with the survives-navigation controller it is no longer needed.
+
 ## Leg 2 — Transport (stock Gadgetbridge, >=0.82.0; prefer >=0.84.0)
 
 The BLE Intent API carries both directions (verified against `BleIntentApi.java`, `AbstractBTLESingleDeviceSupport.java`):
@@ -93,12 +100,17 @@ GrapheneOS notes: notification access is NOT needed (the fork owns its `DataMode
 ## Repo / submodules
 
 - InfiniTime is already a submodule (pinned 1.16.1).
-- Add the clock app as a submodule for authoritative sources: `GrapheneOS/platform_packages_apps_DeskClock`, pinned to the branch matching the device's Android version (needs confirming — see decisions). The Gradle fork we actually build is derived from these sources.
+- Clock app added as a submodule at `deskclock/`: `GrapheneOS/platform_packages_apps_DeskClock`, branch `17` (matches the device's Android 17). This is the authoritative source; the Gradle fork we actually build (renamed package) is derived from it.
 - Gadgetbridge stays stock (no submodule needed).
 
-## Open decisions and checks
+## Decisions (resolved)
 
-- Confirm the fork approach and its implication: doing this for real (bidirectional stopwatch + exact times) means running a renamed fork of the clock app as your daily clock, since the stock app can't expose what's needed and can't be replaced in place. OK to switch to the fork?
-- Which GrapheneOS / Android version is the phone on? That picks the `platform_packages_apps_DeskClock` branch to submodule (e.g. `16-qpr2` for Android 16 QPR2).
-- v1 scope: both stopwatch and timer at once (recommended — one service handles both), or start with one?
-- Watch UI for v1: reuse the existing StopWatch/Timer apps (they already reflect controller state) rather than add a new screen. Recommended.
+- Fork the clock app: yes. Run the renamed fork (`deskclock/` submodule, branch `17`) as the daily clock.
+- v1 scope: both stopwatch and timer.
+- Physical button backs out while running: required. Timer already does this; StopWatch needs the `OnButtonPushed` override removed (see Leg 1).
+- Watch UI for v1: reuse the existing StopWatch/Timer apps (they already reflect controller state); no new screen.
+
+## Remaining checks (non-blocking)
+
+- Confirm the installed Gadgetbridge is >=0.84.0 (for per-characteristic filtering; both legs work from 0.82.0). Current stable is well past this.
+- At firmware build time, confirm the InfiniTime version to base the fork on (submodule is pinned 1.16.1; rebase to a newer tag if desired before starting).

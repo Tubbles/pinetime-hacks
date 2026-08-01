@@ -52,6 +52,13 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - Vendor service ID: ClockSync = `00070000-...`; `0006` reserved for the parked Napper next-event service.
 - Sync design: state transitions + wall-clock reference only (InfiniTime RTC is CTS-synced), full idempotent snapshots, last-writer-wins, resend-on-connect; never per-tick.
 
+## [infinitime] 2026-08-01 — StopWatch captures the physical button (must change)
+
+- User requirement: pressing the button while the stopwatch/timer runs must back out to the watch face and keep it running in the background.
+- Timer already complies (no button override; FreeRTOS timer keeps counting and still fires).
+- StopWatch does NOT: `StopWatch::OnButtonPushed()` (`StopWatch.cpp:246-252`) pauses the stopwatch and returns true (consumes the press), so today the button pauses + stays in the app. Fix: remove the override (method + decl at `StopWatch.h:31`) so the button falls through to default back-navigation; the controller keeps counting; pause stays on the on-screen play/pause button. Holdover from when stopwatch state lived in the screen.
+- Decisions locked: fork the clock app (run renamed fork as daily clock), both stopwatch + timer, device on Android 17. DeskClock submodule added at `deskclock/` (GrapheneOS/platform_packages_apps_DeskClock, branch 17, build tag 2026072900).
+
 ## [flash] 2026-07-19 — sealed-watch OTA is low-risk
 
 - DFU writes to a secondary SPI-flash slot; bootloader swaps + runs unvalidated; reset-before-Validate rolls back; ~7 s watchdog catches a hung image; physical button gives blue=rollback / red=recovery firmware. OTA never touches the bootloader. Rule: never tap Validate until BLE reconnects and a reboot survives with the new corner working.
