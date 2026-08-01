@@ -1,3 +1,7 @@
 [submodule "InfiniTime"]
 	path = InfiniTime
 	url = https://github.com/InfiniTimeOrg/InfiniTime.git
+[submodule "deskclock"]
+	path = deskclock
+	url = https://github.com/GrapheneOS/platform_packages_apps_DeskClock
+	branch = 17
