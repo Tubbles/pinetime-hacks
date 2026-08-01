@@ -29,9 +29,10 @@ So the clock-sync feature is code-complete across all three legs; what remains i
 
 ## Build / CI infrastructure
 
-- `flake.nix` (Android SDK + JDK 17 + gradle via Nix, modeled on the sleipner sibling repo) and `.github/workflows/` (firmware DFU build via the image; phone frame-codec test). See CLAUDE.md "Building and CI". Firmware DFU build and the codec test are both verified locally.
-- TODO (push to GitHub so CI runs; needs the user's go-ahead on creating repos): (a) create a `Tubbles/InfiniTime` fork, push the `clock-sync` branch, repoint the `.gitmodules` URL (the submodule points at local-only commits today, so CI can't fetch them yet); (b) create `Tubbles/pinetime-hacks` (public, matching the sleipner convention) and push; (c) Actions then run on push.
-- TODO (the remaining blocker for building the phone app without an Android machine): the DeskClock Gradle port. AOSP DeskClock is Soong-only; port it to a Gradle project with a renamed applicationId, drop in the `phone/clocksync/` bridge, and add an APK workflow (build via `nix develop .#android`, which works locally here since Nix is available).
+- Repos are live and public: `github.com/Tubbles/pinetime-hacks` plus the `github.com/Tubbles/InfiniTime` fork; the InfiniTime submodule points at the fork's `clock-sync` branch over HTTPS (CI-fetchable). `flake.nix` provides the Android/JDK dev shells; `.github/workflows/` has firmware.yml + phone-codec.yml. See CLAUDE.md "Building and CI".
+- Firmware CI is GREEN: pushing builds the OTA DFU and uploads `pinetime-mcuboot-app-dfu` as a downloadable artifact (first run succeeded). So flashable firmware is available from CI with no local toolchain.
+- Phone codec test verified locally (13 checks); its workflow runs on the next `phone/` push.
+- In progress: the DeskClock Gradle port on an existing-maintained-fork base (so the phone APK builds too), then an APK workflow. Nix is available locally so it can be built/verified here.
 
 ## Planned: 2. Scheduled brightness + silent mode
 
