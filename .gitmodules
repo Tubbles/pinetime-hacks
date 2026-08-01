@@ -1,6 +1,7 @@
 [submodule "InfiniTime"]
 	path = InfiniTime
-	url = https://github.com/InfiniTimeOrg/InfiniTime.git
+	url = https://github.com/Tubbles/InfiniTime.git
+	branch = clock-sync
 [submodule "deskclock"]
 	path = deskclock
 	url = https://github.com/GrapheneOS/platform_packages_apps_DeskClock
