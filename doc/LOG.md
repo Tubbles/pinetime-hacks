@@ -43,6 +43,15 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - Repo is now the master for a multi-feature project; upstream trees (InfiniTime already, the Android clock app and possibly Gadgetbridge to come) are git submodules.
 - Research started for idea 1: InfiniTime timer/stopwatch internals + background execution model, deskclock internals + fork/extend surface, Gadgetbridge bidirectional transport.
 
+## [infinitime][gadgetbridge][build] 2026-08-01 — clock sync research done, design drafted
+
+- Design: `doc/DESIGN-clock-sync.md`. Three legs: InfiniTime ClockSync BLE service (fork), stock Gadgetbridge Intent API (both directions), forked clock app.
+- InfiniTime: both stopwatch and timer already run in the background (StopWatchController is a survives-navigation global; Timer fires via a FreeRTOS software timer regardless of screen; Alarm is the third precedent). The only refactor: promote `Controllers::Timer` from a DisplayApp member to a `main.cpp` global so a NimbleController-owned service can reach it (StopWatch/Alarm are already globals). No new background machinery needed.
+- Gadgetbridge: the BLE Intent API carries BOTH directions. Write (phone->watch) plus subscribe+rebroadcast (watch->phone) via a second toggle. Because `addService` runs for every discovered GATT service before the "supported services" gate, a brand-new InfiniTime characteristic works with NO PineTimeJFSupport fork. Both legs since 0.82.0; per-characteristic filtering since 0.84.0. Trap: the CHANGED event extra is `EXTRA_CHARACTERISTIC` (not `_UUID`, which is the write/read command extra); the public gadgetbridge.org docs get this wrong.
+- Clock app: `com.android.deskclock` is AOSP DeskClock; GrapheneOS ships an integration fork (`GrapheneOS/platform_packages_apps_DeskClock`, per-Android-version branches like `16-qpr2`). ":37" is a platform-injected build number, not a stable app version. Stock external surface is inadequate (timer create-only via SET_TIMER, no public stopwatch intent, exact times locked in a notification chronometer), so a fork is required. Can't replace the platform-signed system app: rename the package and install as a user app; upstream is Soong-only so port sources to a Gradle project. GrapheneOS: BLE Intent API toggles are a restricted setting for sideloaded apps ("Allow restricted settings" first).
+- Vendor service ID: ClockSync = `00070000-...`; `0006` reserved for the parked Napper next-event service.
+- Sync design: state transitions + wall-clock reference only (InfiniTime RTC is CTS-synced), full idempotent snapshots, last-writer-wins, resend-on-connect; never per-tick.
+
 ## [flash] 2026-07-19 — sealed-watch OTA is low-risk
 
 - DFU writes to a secondary SPI-flash slot; bootloader swaps + runs unvalidated; reset-before-Validate rolls back; ~7 s watchdog catches a hung image; physical button gives blue=rollback / red=recovery firmware. OTA never touches the bootloader. Rule: never tap Validate until BLE reconnects and a reboot survives with the new corner working.
