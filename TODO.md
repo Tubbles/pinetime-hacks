@@ -18,7 +18,11 @@ Implementation (firmware leg, on the InfiniTime submodule `clock-sync` branch, b
 - Firmware leg for clock sync is COMPLETE and build-verified (compile only; end-to-end needs the phone fork + hardware). v1 limitations: State char is NOTIFY-only (no READ); timer expiry is not notified (phone derives it from the synced target); stopwatch laps not synced.
 - Build: `podman run --rm -e DISABLE_POSTBUILD=true --userns=keep-id --security-opt label=disable -v <InfiniTime>:/sources docker.io/infinitime/infinitime-build /opt/build.sh pinetime-app` (rootless podman needs `--userns=keep-id`).
 
-Remaining clock-sync work: Leg 2 (Gadgetbridge BLE Intent API settings, no code) and Leg 3 (the phone-side DeskClock fork + bridge, the large remaining piece). Flashing: build `pinetime-mcuboot-app-dfu` and OTA via Gadgetbridge; don't Validate until reconnect + reboot survive.
+Leg 2 (transport): DONE as a config runbook, `doc/clock-sync-setup.md` (Gadgetbridge BLE Intent API toggles + UUID/package filters; no code).
+
+Leg 3 (phone bridge): code written in `phone/clocksync/` (frame codec + DataModel listeners + write-intent sender + CHARACTERISTIC_CHANGED receiver + README). Verified against the real DeskClock DataModel API and the firmware frame, but NOT built (no Android SDK here). Remaining for the user: fork the DeskClock submodule to a Gradle project with a renamed applicationId, drop in the bridge sources, add the manifest receiver, set the watch MAC, build, install, and configure Gadgetbridge per the runbook. Then OTA-flash `pinetime-mcuboot-app-dfu` and verify both directions; don't Validate the firmware until reconnect + reboot survive.
+
+So the clock-sync feature is code-complete across all three legs; what remains is build/flash/on-device verification, which needs the hardware and the Android toolchain.
 - Transport: enable both BLE Intent API toggles on the PineTime in Gadgetbridge, filter to the ClockSync UUIDs + the fork's package, reconnect + re-add to clear the GATT cache.
 - Phone: fork the `deskclock/` submodule (rename package, port to Gradle), add a bridge (DataModel listeners -> CHARACTERISTIC_WRITE; CHARACTERISTIC_CHANGED receiver -> DataModel), sync full snapshots with wall-clock references.
 - Build/flash firmware via the Docker image; OTA via Gadgetbridge; don't Validate until reconnect + reboot survive.
