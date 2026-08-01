@@ -27,6 +27,12 @@ So the clock-sync feature is code-complete across all three legs; what remains i
 - Phone: fork the `deskclock/` submodule (rename package, port to Gradle), add a bridge (DataModel listeners -> CHARACTERISTIC_WRITE; CHARACTERISTIC_CHANGED receiver -> DataModel), sync full snapshots with wall-clock references.
 - Build/flash firmware via the Docker image; OTA via Gadgetbridge; don't Validate until reconnect + reboot survive.
 
+## Build / CI infrastructure
+
+- `flake.nix` (Android SDK + JDK 17 + gradle via Nix, modeled on the sleipner sibling repo) and `.github/workflows/` (firmware DFU build via the image; phone frame-codec test). See CLAUDE.md "Building and CI". Firmware DFU build and the codec test are both verified locally.
+- TODO (push to GitHub so CI runs; needs the user's go-ahead on creating repos): (a) create a `Tubbles/InfiniTime` fork, push the `clock-sync` branch, repoint the `.gitmodules` URL (the submodule points at local-only commits today, so CI can't fetch them yet); (b) create `Tubbles/pinetime-hacks` (public, matching the sleipner convention) and push; (c) Actions then run on push.
+- TODO (the remaining blocker for building the phone app without an Android machine): the DeskClock Gradle port. AOSP DeskClock is Soong-only; port it to a Gradle project with a renamed applicationId, drop in the `phone/clocksync/` bridge, and add an APK workflow (build via `nix develop .#android`, which works locally here since Nix is available).
+
 ## Planned: 2. Scheduled brightness + silent mode
 
 On a schedule configured entirely on the watch (no hard-coded times), switch screen brightness and toggle silent mode. Example: at 20:00 go to lowest brightness + silent; at 07:00 go to middle brightness + full noise. Configuration lives on the watch.

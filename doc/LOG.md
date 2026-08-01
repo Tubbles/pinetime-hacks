@@ -69,6 +69,14 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - State characteristic is NOTIFY-only in v1 (no READ), matching MusicService. Timer expiry is not notified (the phone derives it from the synced target epoch). Laps not synced.
 - Build gotcha: InfiniTime compiles with `-Werror=reorder`, so constructor init-list order must match member declaration order (tripped the Timer screen ctor once).
 
+## [build] 2026-08-01 — Nix flake + GitHub Actions CI; DFU build details
+
+- Modeled the build/CI on the sleipner sibling repo (Nix flake + androidenv + GitHub Actions building an APK). Nix and podman are available in the dev environment; no Android SDK/gradle or docker.
+- `flake.nix` provides `devShells.android` (Android SDK 35/34 + JDK 17 + gradle_8, no NDK) and `.#jvm` (plain JDK). Firmware stays on the docker image (nRF toolchain), not Nix.
+- CI: `.github/workflows/firmware.yml` (builds the DFU via the image, uploads the zip) and `.github/workflows/phone-codec.yml` (compiles + runs the pure ClockSyncFrame test, verified locally: 13 checks pass). A phone-APK workflow waits on the DeskClock Gradle port.
+- Firmware DFU build gotchas (verified locally): there is no `pinetime-mcuboot-app-dfu` make target; the DFU zip is a POST_BUILD command on the `pinetime-mcuboot-app` target (`src/CMakeLists.txt:988-993`), landing at `build/src/pinetime-mcuboot-app-dfu-<ver>.zip`. `build.sh`'s `post_build.sh` collection step fails unless the recovery images are also built, so pass `DISABLE_POSTBUILD=true` (the DFU is still produced by the target) and grab the zip from `build/src/`. Mount the whole repo with `SOURCES_DIR=/repo/InfiniTime` so `git describe` resolves through the submodule gitlink and the artifact is versioned (1.16.1) rather than falling back to a default.
+- To actually run CI: the repo and the InfiniTime submodule's `clock-sync` branch must be pushed to GitHub (the submodule currently points at local-only commits). Pending the user's go-ahead on creating the forks/repos.
+
 ## [infinitime] 2026-08-01 — StopWatch captures the physical button (must change)
 
 - User requirement: pressing the button while the stopwatch/timer runs must back out to the watch face and keep it running in the background.

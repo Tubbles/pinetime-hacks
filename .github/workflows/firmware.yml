@@ -1,0 +1,43 @@
+name: Firmware
+
+# Builds the InfiniTime OTA package with the official build image and uploads
+# the DFU zip as an artifact, so a flashable build is available without a local
+# toolchain. Requires the InfiniTime submodule to point at a fork whose commit
+# is pushed (so `submodules: recursive` can fetch it).
+
+on:
+  push:
+    branches: [master]
+    paths: ['InfiniTime', '.gitmodules', '.github/workflows/firmware.yml']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build OTA DFU
+        # Mount the whole repo (not just InfiniTime) so git version detection
+        # works through the submodule gitlink. The DFU zip is generated as a
+        # post-build step of the pinetime-mcuboot-app target (BUILD_DFU=1), so
+        # DISABLE_POSTBUILD=true is fine: it only skips build.sh's artifact
+        # collection, which otherwise fails looking for the recovery image we
+        # don't build here.
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" \
+            -e SOURCES_DIR=/repo/InfiniTime \
+            -e BUILD_DIR=/repo/InfiniTime/build \
+            -e DISABLE_POSTBUILD=true \
+            -v "$PWD:/repo" \
+            docker.io/infinitime/infinitime-build /opt/build.sh pinetime-mcuboot-app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinetime-mcuboot-app-dfu
+          path: InfiniTime/build/src/*dfu*.zip
+          if-no-files-found: error

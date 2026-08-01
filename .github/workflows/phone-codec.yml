@@ -1,0 +1,31 @@
+name: Phone codec
+
+# Fast check of the ClockSync wire-protocol codec. Pure JVM, no Android SDK.
+
+on:
+  push:
+    branches: [master]
+    paths: ['phone/clocksync/**', '.github/workflows/phone-codec.yml']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Compile and run ClockSyncFrame test
+        working-directory: phone/clocksync
+        run: |
+          mkdir -p build
+          javac -d build \
+            src/com/android/deskclock/clocksync/ClockSyncFrame.java \
+            test/com/android/deskclock/clocksync/ClockSyncFrameTest.java
+          java -cp build com.android.deskclock.clocksync.ClockSyncFrameTest

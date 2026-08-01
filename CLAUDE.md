@@ -34,6 +34,12 @@ Close out every work item by documenting it before you commit. Put the learnings
 - `work/` — brainstorming and throwaway specs, gitignored.
 - Submodules (planned): upstream source trees we hack on (InfiniTime, possibly Gadgetbridge). Not added yet; see `TODO.md`.
 
+## Building and CI
+
+- Firmware (InfiniTime fork) is built with the official image `docker.io/infinitime/infinitime-build` (toolchain baked in). Local build with rootless podman: `podman run --rm --userns=keep-id --security-opt label=disable -e SOURCES_DIR=/repo/InfiniTime -e BUILD_DIR=/repo/InfiniTime/build -e DISABLE_POSTBUILD=true -v "$(pwd):/repo" docker.io/infinitime/infinitime-build /opt/build.sh pinetime-mcuboot-app`. The OTA DFU zip lands at `InfiniTime/build/src/*dfu*.zip`. Notes: rootless podman needs `--userns=keep-id`; mount the whole repo (not just `InfiniTime`) so git version detection resolves through the submodule; the DFU is a post-build step of the `pinetime-mcuboot-app` target, so `DISABLE_POSTBUILD=true` still produces it and avoids the recovery-collection step that otherwise fails. For a fast compile check use target `pinetime-app`.
+- Phone side uses the Nix flake (`nix develop .#android` for the Android SDK + JDK 17 + Gradle; `.#jvm` for just a JDK). The ClockSync frame codec is tested standalone with plain `javac`/`java` (see `phone/clocksync/test/`). The full Gradle port of the DeskClock fork is not done yet (see `TODO.md`).
+- CI: `.github/workflows/firmware.yml` (DFU artifact via the build image) and `.github/workflows/phone-codec.yml` (the frame codec test). They run once the repo and the InfiniTime fork are pushed to GitHub (see `TODO.md`).
+
 ## Git workflow
 
 - Commit directly to `master`; no feature branches until the project grows to need them.
