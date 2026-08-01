@@ -77,6 +77,14 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - Firmware DFU build gotchas (verified locally): there is no `pinetime-mcuboot-app-dfu` make target; the DFU zip is a POST_BUILD command on the `pinetime-mcuboot-app` target (`src/CMakeLists.txt:988-993`), landing at `build/src/pinetime-mcuboot-app-dfu-<ver>.zip`. `build.sh`'s `post_build.sh` collection step fails unless the recovery images are also built, so pass `DISABLE_POSTBUILD=true` (the DFU is still produced by the target) and grab the zip from `build/src/`. Mount the whole repo with `SOURCES_DIR=/repo/InfiniTime` so `git describe` resolves through the submodule gitlink and the artifact is versioned (1.16.1) rather than falling back to a default.
 - To actually run CI: the repo and the InfiniTime submodule's `clock-sync` branch must be pushed to GitHub (the submodule currently points at local-only commits). Pending the user's go-ahead on creating the forks/repos.
 
+## [build] 2026-08-01 — GitHub live, firmware CI green, phone APK builds
+
+- Public repos created: `Tubbles/pinetime-hacks`, the `Tubbles/InfiniTime` fork (submodule -> fork `clock-sync` branch over HTTPS), and the `Tubbles/Clock` fork for the phone app. Firmware CI is green (DFU artifact downloadable).
+- Phone app: chose BlackyHawky/Clock as the existing Gradle base (the AOSP DeskClock is Soong-only). Picked tag `2.20`, not `main`: 2.20 uses AGP 8.10 / Gradle 8.14 / compileSdk 35 / material 1.12, which matches the flake's android shell (SDK 35, gradle_8, JDK 17); `main` moved to AGP 9 / Gradle 9 / SDK 36 and would fight the toolchain.
+- Bridge adaptation for BlackyHawky (its DataModel diverges slightly from GrapheneOS/AOSP): package `com.android.deskclock` -> `com.best.deskclock`; `StopwatchListener` is single-arg `stopwatchUpdated(after)` with no `lapAdded`; `DataModel.addTimer` takes a 4th `buttonTime` arg. The canonical `phone/clocksync/` (com.android.deskclock, GrapheneOS-targeted) is kept as the neutral reference; the fork carries the adapted copy. Regenerate the fork copy from canonical with a sed rename + those three edits.
+- Build result: signed debug APK `com.tubbles.deskclock.debug` (~10 MiB), built via `nix develop .#android -c gradle assembleDebug --no-configuration-cache` (the config cache is disabled because tag 2.20's output-naming uses a deprecated variant API that conflicts with it). Verified applicationId, the ClockSyncReceiver + CHARACTERISTIC_CHANGED filter, and BLUETOOTH_CONNECT via aapt/apksigner. Not run on hardware.
+- Gradle-via-nix gotcha: use the flake's `gradle` (8.14.x) not `./gradlew` (avoids the wrapper download and an exec-bit issue on the cloned gradlew).
+
 ## [infinitime] 2026-08-01 — StopWatch captures the physical button (must change)
 
 - User requirement: pressing the button while the stopwatch/timer runs must back out to the watch face and keep it running in the background.

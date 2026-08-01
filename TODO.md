@@ -32,7 +32,7 @@ So the clock-sync feature is code-complete across all three legs; what remains i
 - Repos are live and public: `github.com/Tubbles/pinetime-hacks` plus the `github.com/Tubbles/InfiniTime` fork; the InfiniTime submodule points at the fork's `clock-sync` branch over HTTPS (CI-fetchable). `flake.nix` provides the Android/JDK dev shells; `.github/workflows/` has firmware.yml + phone-codec.yml. See CLAUDE.md "Building and CI".
 - Firmware CI is GREEN: pushing builds the OTA DFU and uploads `pinetime-mcuboot-app-dfu` as a downloadable artifact (first run succeeded). So flashable firmware is available from CI with no local toolchain.
 - Phone codec test verified locally (13 checks); its workflow runs on the next `phone/` push.
-- In progress: the DeskClock Gradle port on an existing-maintained-fork base (so the phone APK builds too), then an APK workflow. Nix is available locally so it can be built/verified here.
+- Phone APK builds: the clock app is a BlackyHawky/Clock fork (tag 2.20, chosen because its Gradle toolchain matches the flake and it keeps the AOSP DataModel) with the ClockSync bridge, at `github.com/Tubbles/Clock@clocksync`, added as the `phone/deskclock-app` submodule. It produces a signed debug APK (`com.tubbles.deskclock.debug`), verified by building locally via `nix develop .#android`. `.github/workflows/phone-app.yml` builds it in CI and uploads `clocksync-clock-apk`. Not yet run on hardware (no device); the BLE round-trip is untested.
 
 ## Planned: 2. Scheduled brightness + silent mode
 

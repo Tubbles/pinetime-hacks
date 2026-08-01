@@ -6,3 +6,7 @@
 	path = deskclock
 	url = https://github.com/GrapheneOS/platform_packages_apps_DeskClock
 	branch = 17
+[submodule "phone/deskclock-app"]
+	path = phone/deskclock-app
+	url = https://github.com/Tubbles/Clock.git
+	branch = clocksync
