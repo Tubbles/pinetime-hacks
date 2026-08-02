@@ -55,9 +55,9 @@ Remaining: on-device verification (send a Swedish text through Gadgetbridge, che
 
 Use case: the intercom door calls the phone; answering and pressing 5 on the watch opens the door. Design: `doc/DESIGN-intercom-keytones.md`; setup: `doc/clock-sync-setup.md` section 5.
 
-Implemented across all legs: firmware (InfiniTime `3b95e758`: InCall launcher app with hang-up + keypad + configurable intercom key, KeyTones BLE service `00080001`, Settings -> Intercom page, watch-answer jumps to InCall; compile-verified, +1028 B flash); Clock fork hub forwarding (`bbc17e22d`); dialer fork (Tubbles/Phone `de70e473`, Fossify Phone 1.11.1 + KeyToneReceiver -> `CallManager.keypad` = real in-band DTMF, applicationId `com.tubbles.phone`, submodule `phone/dialer-app`, CI `phone-dialer.yml`).
+Implemented across all legs (all CI-green): firmware (InfiniTime `3b95e758` InCall app/keypad/setting + `1bf8da27` call-state characteristic `00080002` with auto-open/close); Clock fork hub forwarding (`bbc17e22d`); dialer fork (Tubbles/Phone `de70e473` + `c4ad5263`, Fossify Phone 1.11.1, KeyToneReceiver -> real in-band DTMF, `com.tubbles.phone`, labeled Phone T / sv Telefon T); Gadgetbridge T (Tubbles/Gadgetbridge `adc4e9386`, base 0.92.2, forwards call established/ended to the watch, installs beside F-Droid GB as `nodomain.freeyourgadget.gadgetbridge.t`, submodule `phone/gadgetbridge-app`, CI `gadgetbridge.yml`). Clock fork is labeled Clock T (`fe0a46ca0`).
 
-Remaining: verify the phone-app and phone-dialer CI runs are green (local Gradle builds are banned on this machine after OOM kill waves; the dialer's Kotlin compile passed locally, dexing is CI-only). Then on-device: install both APKs, set the dialer as default phone app, add the KeyTones UUID to the Gadgetbridge characteristic filter, and run the door test. Note the firmware settings-version bump resets all watch settings once.
+Remaining, all on-device: flash the DFU (settings reset once: version bump), install Clock T + Phone T + Gadgetbridge T from CI artifacts, move the PineTime from stock GB to Gadgetbridge T, set the dialer as default phone app, configure the Intent API filters and the `clocksync_gadgetbridge_package` pref, then run the door test per `doc/clock-sync-setup.md`.
 
 ## Parked: next-event watch face corner (Napper)
 
