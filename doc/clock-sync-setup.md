@@ -22,7 +22,7 @@ The watch is now managed by Gadgetbridge T (CI artifact `gadgetbridge-t-apk`, ap
 
 - Install Gadgetbridge T, grant it notification access, and pair/add the PineTime in it.
 - In stock Gadgetbridge (if installed), REMOVE the PineTime device (or at least disable its auto-reconnect): two Gadgetbridges fighting over one watch causes connect/disconnect thrashing. Stock GB may stay for other gadgets.
-- In the Clock T app, set the `clocksync_gadgetbridge_package` preference to `nodomain.freeyourgadget.gadgetbridge.t` so outbound frames reach the fork.
+- Clock T ships with its deployment config baked in (watch MAC, Gadgetbridge T package, Phone T debug package) — no preference-setting needed. The `clocksync_*` preferences still override if anything changes.
 
 Then, on the PineTime device in Gadgetbridge T, open Device settings -> Developer settings / BLE Intent API and:
 
