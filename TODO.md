@@ -51,11 +51,13 @@ The default UI font now carries Latin-1 Supplement (0xC0-0xFF: åäöÅÄÖ plus
 
 Remaining: on-device verification (send a Swedish text through Gadgetbridge, check å/ä/ö render on the Notifications screen and that a >100-byte message ends cleanly).
 
-## Active: 6. In-call DTMF key tones from the watch (intercom door)
+## Implemented, pending device verification: 6. In-call DTMF key tones (intercom door)
 
-Clarified 2026-08-02. Use case: the user's intercom door calls their phone; after answering, pressing "5" opens the door. Requirements (user's words, paraphrased): the watch shows an "in call" screen that allows hanging up and opening a key-tone numberpad (a second screen with 0-9, *, #); additionally a new settings page "intercom button" selects one key to show directly on the in-call screen.
+Use case: the intercom door calls the phone; answering and pressing 5 on the watch opens the door. Design: `doc/DESIGN-intercom-keytones.md`; setup: `doc/clock-sync-setup.md` section 5.
 
-Direction: watch sends the pressed digit over BLE (new vendor characteristic, ClockSync transport pattern via Gadgetbridge's Intent API); a phone-side receiver plays the DTMF tone. Android constraint to verify: true in-band DTMF injection needs the default-dialer role, so v1 likely plays the tone acoustically (mic pickup, speakerphone) with a dialer-fork escalation if the intercom does not hear it. The user has explicitly sanctioned forking their dialer (`com.android.dialer`, the GrapheneOS AOSP Dialer fork) if needed; note AOSP Dialer is Soong-only like DeskClock was, so the escalation likely means an existing Gradle dialer with an InCallService (e.g. Fossify Phone, research pending) renamed and set as default dialer. The watch leg is identical in both cases (receiver-side swap only). Hang-up reuses the existing ANS event characteristic. Design doc pending research (in progress).
+Implemented across all legs: firmware (InfiniTime `3b95e758`: InCall launcher app with hang-up + keypad + configurable intercom key, KeyTones BLE service `00080001`, Settings -> Intercom page, watch-answer jumps to InCall; compile-verified, +1028 B flash); Clock fork hub forwarding (`bbc17e22d`); dialer fork (Tubbles/Phone `de70e473`, Fossify Phone 1.11.1 + KeyToneReceiver -> `CallManager.keypad` = real in-band DTMF, applicationId `com.tubbles.phone`, submodule `phone/dialer-app`, CI `phone-dialer.yml`).
+
+Remaining: verify the phone-app and phone-dialer CI runs are green (local Gradle builds are banned on this machine after OOM kill waves; the dialer's Kotlin compile passed locally, dexing is CI-only). Then on-device: install both APKs, set the dialer as default phone app, add the KeyTones UUID to the Gadgetbridge characteristic filter, and run the door test. Note the firmware settings-version bump resets all watch settings once.
 
 ## Parked: next-event watch face corner (Napper)
 
