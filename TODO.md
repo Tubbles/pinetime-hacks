@@ -15,6 +15,7 @@ Implementation (firmware leg, on the InfiniTime submodule `clock-sync` branch, b
 - DONE (77531c3e, build-verified): promote `Controllers::Timer` to a `main.cpp` global via a late `Init()` from DisplayApp, so a BLE service can reach it (StopWatch/Alarm already global). No behavior change.
 - DONE (cea26312, build-verified): ClockSync BLE service `00070000-...` (control WRITE `00070001` + state NOTIFY `00070002`), wired through SystemTask/NimbleController; phone->watch applies to the stopwatch (new `StopWatchController::SetState`) and timer; wall-clock-referenced frames.
 - DONE (51dcfbf6, build-verified): watch->phone notify from the StopWatch/Timer screen action handlers (service exposed via AppControllers). Phone commands apply directly to the controllers, so they do not echo.
+- DONE (2026-08-02 review fixes, build-verified): screens restyle on phone-driven state changes (InfiniTime 18d02133); phone bridge reconnect resync no longer suppressed by its own dedup cache and inbound frames are MAC-filtered (Clock f16780472); codec drift guard in phone-app CI. See `doc/LOG.md`.
 - Firmware leg for clock sync is COMPLETE and build-verified (compile only; end-to-end needs the phone fork + hardware). v1 limitations: State char is NOTIFY-only (no READ); timer expiry is not notified (phone derives it from the synced target); stopwatch laps not synced.
 - Build: `podman run --rm -e DISABLE_POSTBUILD=true --userns=keep-id --security-opt label=disable -v <InfiniTime>:/sources docker.io/infinitime/infinitime-build /opt/build.sh pinetime-app` (rootless podman needs `--userns=keep-id`).
 
@@ -38,11 +39,11 @@ So the clock-sync feature is code-complete across all three legs; what remains i
 
 On a schedule configured entirely on the watch (no hard-coded times), switch screen brightness and toggle silent mode. Example: at 20:00 go to lowest brightness + silent; at 07:00 go to middle brightness + full noise. Configuration lives on the watch.
 
-## Planned: 3. Wrist-raise shows a locked screen (touch rejected until button)
+## Implemented, pending device verification: 3. Wrist-raise lock screen
 
-Waking the screen via raise-wrist should show the screen but reject touch input, like a lock screen, until the physical button is pressed to fully unlock (prevents accidental touches). Lock indicator goes in the Casio G7710 bottom-left corner (the BPM slot).
+Waking via raise-wrist shows the screen but rejects touch until the physical button unlocks (the unlocking press is consumed); shield indicator in the G7710 BPM slot while locked. Implemented on the InfiniTime `clock-sync` branch, commit `49c463dc`, compile-verified; design + verified corrections in `doc/DESIGN-lock-screen.md`, findings in `doc/LOG.md` ([infinitime] 2026-08-02).
 
-Design: `doc/DESIGN-lock-screen.md` (ready to implement). A single `locked` flag in SystemTask plus three small hooks (set on raise-from-sleep, reject touch, unlock on button) and a G7710 indicator. Decisions worth confirming before building: clear the lock when an alarm fires (recommended, so alarms can still be silenced), keep notifications view-only while locked, and accept that a raise-wake onto a non-watchface app blocks touch but shows no indicator there (v1).
+Remaining: on-device verification together with clock sync (raise-lock, button unlock, tap/shake/button wakes stay unlocked, alarm and ringing timer clear the lock, indicator swap on the G7710 face).
 
 ## Planned: 5. Extended-Latin (åäö) in watch notifications
 
