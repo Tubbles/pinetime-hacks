@@ -17,8 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Init the Clock submodule
+        run: git submodule update --init phone/deskclock-app
 
       - uses: cachix/install-nix-action@v27
         with:

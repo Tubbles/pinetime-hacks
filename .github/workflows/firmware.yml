@@ -3,7 +3,9 @@ name: Firmware
 # Builds the InfiniTime OTA package with the official build image and uploads
 # the DFU zip as an artifact, so a flashable build is available without a local
 # toolchain. Requires the InfiniTime submodule to point at a fork whose commit
-# is pushed (so `submodules: recursive` can fetch it).
+# is pushed. Only the InfiniTime submodule is initialized: blanket recursive
+# init would also pull the huge Gadgetbridge submodule and its flaky codeberg
+# externals into every run.
 
 on:
   push:
@@ -18,8 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Init the InfiniTime submodule
+        run: git submodule update --init InfiniTime
 
       - name: Build OTA DFU
         # Mount the whole repo (not just InfiniTime) so git version detection

@@ -22,8 +22,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      # A real clone, not a submodule checkout: GB's buildGitChangelog task
+      # declares .git/HEAD as an input file, and in a submodule .git is a
+      # gitlink file. Full history so the changelog/version tasks have tags.
+      # GB's own codeberg externals are not needed for the mainline build.
+      - name: Clone Gadgetbridge T at the pinned commit
+        run: |
+          gitlink=$(git rev-parse HEAD:phone/gadgetbridge-app)
+          rm -rf phone/gadgetbridge-app
+          git clone --branch callstate https://github.com/Tubbles/Gadgetbridge.git phone/gadgetbridge-app
+          git -C phone/gadgetbridge-app checkout "$gitlink"
 
       - uses: actions/setup-java@v4
         with:
