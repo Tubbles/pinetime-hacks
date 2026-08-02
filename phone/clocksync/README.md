@@ -148,7 +148,7 @@ The bridge registers a receiver for `BluetoothDevice.ACTION_ACL_CONNECTED` to re
 
 The bridge reads two keys from the DeskClock default `SharedPreferences`:
 
-- `clocksync_watch_mac` (String) — the PineTime's Bluetooth MAC, uppercase colon form, e.g. `C1:9A:2B:3C:4D:5E`. Required; with it empty the bridge logs a warning and sends nothing.
+- `clocksync_watch_mac` (String) — the PineTime's Bluetooth MAC, uppercase colon form, e.g. `C1:9A:2B:3C:4D:5E`. Required in BOTH directions: with it empty the bridge logs a warning and sends nothing, and `ClockSyncReceiver` drops every inbound frame (frames are only applied when the broadcast's `EXTRA_DEVICE_ADDRESS` matches this MAC, so a second Gadgetbridge-managed device cannot drive the clock).
 - `clocksync_gadgetbridge_package` (String, optional) — defaults to `nodomain.freeyourgadget.gadgetbridge`. Set to `nodomain.freeyourgadget.gadgetbridge.nightly` if you run the Gadgetbridge nightly build.
 
 Because these live in the device-protected prefs on N+, the simplest robust way to set them is in the fork itself: add an `EditTextPreference` for each to `SettingsActivity`, or write them once programmatically (e.g. `prefs.edit().putString("clocksync_watch_mac", "C1:9A:...").apply();`) in a first-run block. Find the MAC in Gadgetbridge (device info) or Android's Bluetooth settings.
@@ -190,4 +190,10 @@ GrapheneOS note (from `doc/DESIGN-clock-sync.md`, treat as inference until confi
 - Inbound *expired* timer is a no-op: a running phone timer expires on its own via `TimerService`.
 - Stopwatch laps are not synced.
 
-Echo suppression: while an inbound frame is applied, an `mApplyingRemote` flag stops the bridge's own listeners from re-broadcasting it; transitions are also idempotent (mutate only when the state actually differs), and identical outbound frames are de-duplicated against the last one sent.
+Echo suppression: while an inbound frame is applied, an `mApplyingRemote` flag stops the bridge's own listeners from re-broadcasting it; transitions are also idempotent (mutate only when the state actually differs), and identical outbound frames are de-duplicated against the last one sent. The dedup cache is dropped on every `ACTION_ACL_CONNECTED` before the resync: frames broadcast while the link was down are lost (no delivery queue), so the byte-identical resync frame must not be suppressed.
+
+Security note (accepted v1 risk): `ClockSyncReceiver` is exported and Gadgetbridge's broadcasts are unsigned, so any app on the phone that knows the watch MAC could forge a `CHARACTERISTIC_CHANGED` broadcast and start/stop the stopwatch or a timer. There is no clean sender check for unsigned broadcasts; the worst case is a nuisance state change.
+
+## Relation to the shipping fork
+
+The copy that actually ships lives in the `phone/deskclock-app` submodule (a BlackyHawky/Clock fork, tag 2.20), whose `DataModel` diverges slightly from the AOSP/GrapheneOS DeskClock this canonical copy targets. To regenerate the fork copy from this one: rename the package `com.android.deskclock` -> `com.best.deskclock`, change `stopwatchUpdated(before, after)` to the single-arg `stopwatchUpdated(after)` and drop `lapAdded`, and add BlackyHawky's 4th `buttonTime` argument to `DataModel.addTimer`. `ClockSyncFrame.java` must stay byte-identical modulo the package line; CI enforces that (`.github/workflows/phone-app.yml`).

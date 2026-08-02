@@ -288,6 +288,16 @@ public final class ClockSyncBridge {
     // --- Inbound: frame -> DataModel ----------------------------------------
 
     /**
+     * @return true if {@code deviceAddress} matches the configured watch MAC
+     *      (case-insensitive). False when no MAC is configured: inbound frames
+     *      are only applied when they provably come from the configured watch.
+     */
+    public boolean isConfiguredWatch(String deviceAddress) {
+        final String watchMac = getWatchMacAddress();
+        return !TextUtils.isEmpty(watchMac) && watchMac.equalsIgnoreCase(deviceAddress);
+    }
+
+    /**
      * Applies a frame received from the watch. Called by ClockSyncReceiver on the
      * main thread. Guards against echoing the change back to the watch.
      */
@@ -389,6 +399,12 @@ public final class ClockSyncBridge {
     private final class ConnectionReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            // Frames broadcast while the link was down are lost (the Intent API
+            // has no delivery queue) but still populated the dedup cache, which
+            // would suppress the byte-identical resync frame. Drop the cache so
+            // the resync always goes out.
+            mLastSentStopwatchFrame = null;
+            mLastSentTimerFrame = null;
             resendCurrentState();
         }
     }
