@@ -95,3 +95,9 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 ## [flash] 2026-07-19 — sealed-watch OTA is low-risk
 
 - DFU writes to a secondary SPI-flash slot; bootloader swaps + runs unvalidated; reset-before-Validate rolls back; ~7 s watchdog catches a hung image; physical button gives blue=rollback / red=recovery firmware. OTA never touches the bootloader. Rule: never tap Validate until BLE reconnects and a reboot survives with the new corner working.
+
+## [build] 2026-08-02 — phone-app CI green; clock-sync v1 reviewed
+
+- The `Phone app` workflow's first run succeeded (3m46s including the initial Nix Android SDK fetch); `clocksync-clock-apk` is downloadable. The parallel `Firmware` re-run stayed green. Both deliverables now build from CI with no local toolchain.
+- Fresh-eyes code review of the whole clock-sync v1 (firmware service + screens, phone bridge, CI): one correctness bug (the phone bridge's reconnect resync is defeated by its own outbound dedup cache) plus display-staleness and hardening notes. Findings recorded in `SUGGESTIONS.md` under "Clock-sync review findings"; nothing applied yet.
+- Verified the fork's `ClockSyncFrame.java` is byte-identical to the canonical `phone/clocksync/` copy modulo the package line (drift guard candidate noted in SUGGESTIONS.md).
