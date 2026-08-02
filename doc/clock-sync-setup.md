@@ -4,6 +4,8 @@ End-to-end steps to get the stopwatch/timer sync and the in-call key tones worki
 
 Heads-up before flashing: the key-tones firmware bumps the settings version, so on first boot ALL watch settings reset to defaults (watch face, wake modes, brightness, etc.) — re-set them once.
 
+APK updates from CI: all three app artifacts (Gadgetbridge T, Clock T, Phone T) are debug builds signed with the repo's committed keystore (`.github/debug.keystore`), so a newer CI APK installs straight over the old one. Exception: an app installed from an artifact built BEFORE that keystore existed carries a throwaway signature, and Android refuses the update with a bare "app not installed" — uninstall it once and install fresh (Gadgetbridge T loses its device pairing and settings, Clock T its alarms/timers, Phone T its default-dialer role; all must be redone once).
+
 ## 1. Watch firmware (OTA)
 
 The firmware changes live on the InfiniTime submodule branch `clock-sync` (base 1.16.1). Build the OTA DFU package with the official image (rootless podman needs `--userns=keep-id`):

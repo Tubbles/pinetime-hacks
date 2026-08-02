@@ -36,6 +36,15 @@ jobs:
           purge-last-accessed: 0
           purge-primary-key: never
 
+      # Without a stable key, every ephemeral runner generates a fresh debug
+      # keystore and Android refuses to update an app whose signature changed
+      # ("app not installed"). AGP picks this file up with the standard debug
+      # credentials, so no Gradle changes are needed.
+      - name: Use the repo's stable debug signing key
+        run: |
+          mkdir -p ~/.android
+          cp .github/debug.keystore ~/.android/debug.keystore
+
       # Fossify ships three flavors (core/foss/gplay); foss is the F-Droid-style
       # one and the only one needed here.
       - name: Build foss debug APK
