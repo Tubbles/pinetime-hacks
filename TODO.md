@@ -51,9 +51,11 @@ The default UI font now carries Latin-1 Supplement (0xC0-0xFF: åäöÅÄÖ plus
 
 Remaining: on-device verification (send a Swedish text through Gadgetbridge, check å/ä/ö render on the Notifications screen and that a >100-byte message ends cleanly).
 
-## Planned: 6. Send key tones from the phone app to the watch
+## Active: 6. In-call DTMF key tones from the watch (intercom door)
 
-User idea (needs a short clarification on exact intent): "being able to send key tones from the watch phone app". Candidate readings: DTMF/keypad tones triggered from the watch during a call, or keypress tones forwarded phone<->watch. Confirm the intended direction and use case before designing.
+Clarified 2026-08-02. Use case: the user's intercom door calls their phone; after answering, pressing "5" opens the door. Requirements (user's words, paraphrased): the watch shows an "in call" screen that allows hanging up and opening a key-tone numberpad (a second screen with 0-9, *, #); additionally a new settings page "intercom button" selects one key to show directly on the in-call screen.
+
+Direction: watch sends the pressed digit over BLE (new vendor characteristic, ClockSync transport pattern via Gadgetbridge's Intent API); a phone-side receiver plays the DTMF tone. Android constraint to verify: true in-band DTMF injection needs the default-dialer role, so v1 likely plays the tone acoustically (mic pickup, speakerphone) with a dialer-fork escalation if the intercom does not hear it. The user has explicitly sanctioned forking their dialer (`com.android.dialer`, the GrapheneOS AOSP Dialer fork) if needed; note AOSP Dialer is Soong-only like DeskClock was, so the escalation likely means an existing Gradle dialer with an InCallService (e.g. Fossify Phone, research pending) renamed and set as default dialer. The watch leg is identical in both cases (receiver-side swap only). Hang-up reuses the existing ANS event characteristic. Design doc pending research (in progress).
 
 ## Parked: next-event watch face corner (Napper)
 
