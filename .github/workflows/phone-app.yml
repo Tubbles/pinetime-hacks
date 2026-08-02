@@ -35,6 +35,16 @@ jobs:
           purge-last-accessed: 0
           purge-primary-key: never
 
+      # The canonical codec (phone/clocksync, tested by phone-codec.yml) and the
+      # copy shipping in the Clock fork must stay byte-identical modulo the
+      # package line; the fork copy is otherwise untested.
+      - name: Check the fork codec has not drifted from the canonical one
+        run: |
+          diff \
+            <(sed 's/com\.best\.deskclock/com.android.deskclock/' \
+              phone/deskclock-app/app/src/main/java/com/best/deskclock/clocksync/ClockSyncFrame.java) \
+            phone/clocksync/src/com/android/deskclock/clocksync/ClockSyncFrame.java
+
       - name: Build debug APK
         # tag 2.20's output-naming uses a deprecated variant API that conflicts
         # with the configuration cache, so it is disabled here (see LOG.md).
