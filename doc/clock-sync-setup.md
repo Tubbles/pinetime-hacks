@@ -16,9 +16,15 @@ podman run --rm --userns=keep-id --security-opt label=disable \
 
 The `pinetime-mcuboot-app-dfu-1.16.1.zip` lands in `InfiniTime/build/output/`. Flash it over the air with Gadgetbridge's file installer (Device -> ... -> Install / the DFU flow). After it reboots, do NOT tap Settings -> Firmware -> Validate until Bluetooth reconnects and a reboot survives with the watch working; if anything is wrong, let the battery drain or use the button rollback (hold on boot until the pine cone is blue) so MCUBoot reverts. The watch keeps its existing resources; no resource reflash is needed.
 
-## 2. Gadgetbridge (stock, F-Droid, >=0.84.0)
+## 2. Gadgetbridge T (the Gadgetbridge fork)
 
-On the PineTime device in Gadgetbridge, open Device settings -> Developer settings / BLE Intent API and:
+The watch is now managed by Gadgetbridge T (CI artifact `gadgetbridge-t-apk`, applicationId `nodomain.freeyourgadget.gadgetbridge.t`), which adds call-state forwarding so the watch's InCall screen opens and closes itself. Stock F-Droid Gadgetbridge also works for everything except that auto-open/close, but only ONE app may own the PineTime:
+
+- Install Gadgetbridge T, grant it notification access, and pair/add the PineTime in it.
+- In stock Gadgetbridge (if installed), REMOVE the PineTime device (or at least disable its auto-reconnect): two Gadgetbridges fighting over one watch causes connect/disconnect thrashing. Stock GB may stay for other gadgets.
+- In the Clock T app, set the `clocksync_gadgetbridge_package` preference to `nodomain.freeyourgadget.gadgetbridge.t` so outbound frames reach the fork.
+
+Then, on the PineTime device in Gadgetbridge T, open Device settings -> Developer settings / BLE Intent API and:
 
 - Enable "Allow GATT interaction through BLE Intent API" (the phone->watch write path).
 - Enable "Broadcast GATT notification Intents through BLE Intent API" (the watch->phone notify path).
@@ -43,5 +49,5 @@ The digit path is watch -> Gadgetbridge -> clock fork (hub) -> dialer fork -> DT
 - Install the dialer fork (Fossify Phone based, `com.tubbles.phone`; CI artifact `keytones-dialer-apk` or build `phone/dialer-app` locally) and set it as the default phone app: Settings -> Apps -> Default apps -> Phone app. Only the default dialer's InCallService can inject real DTMF.
 - The clock fork forwards to `com.tubbles.phone` by default; the `clocksync_dialer_package` preference overrides it (e.g. for the `.debug` build set `com.tubbles.phone.debug`).
 - On the watch, Settings -> Intercom picks the key shown directly on the InCall screen (e.g. 5 for the door).
-- Verify: call the phone, answer, open the InCall app on the watch (it opens automatically when you answer on the watch): the red button must hang up. With a call to the intercom active, press the intercom key; the door must open. Without a call, key presses are harmless no-ops.
+- Verify: call the phone and answer (on either device); with Gadgetbridge T the watch wakes into the InCall screen by itself, and it dismisses itself when the call ends (the red button must hang up, which also closes the screen). With a call to the intercom active, press the intercom key; the door must open. Without a call, key presses are harmless no-ops. Outgoing calls open the screen too; ringing alone does not (the incoming-call alert handles that).
 - Debug tip: watch a `logcat` filtered on `KeyToneReceiver`/`CallManager`, or call a second phone and listen for the tones.

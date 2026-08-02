@@ -22,7 +22,7 @@
         # Pure Java/Kotlin + androidx, so no NDK is needed.
         androidSdk = (pkgs.androidenv.composeAndroidPackages {
           platformVersions = [ "36" "35" "34" ];
-          buildToolsVersions = [ "36.0.0" "35.0.0" ];
+          buildToolsVersions = [ "36.1.0" "36.0.0" "35.0.0" ];
           includeNDK = false;
         }).androidsdk;
       in {
@@ -39,6 +39,16 @@
         # A plain JDK shell for the pure ClockSyncFrame codec test (no SDK).
         devShells.jvm = pkgs.mkShell {
           packages = [ pkgs.openjdk17 ];
+        };
+
+        # Gadgetbridge T needs a newer toolchain than the other apps: JDK 21
+        # and build-tools 36.1.0. Gradle 9.5.1 comes from the repo's own
+        # wrapper (network fetch on first run), so no nix gradle here.
+        devShells.gadgetbridge = pkgs.mkShell {
+          packages = [ androidSdk pkgs.openjdk21 ];
+          ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
+          ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
+          JAVA_HOME = "${pkgs.openjdk21}/lib/openjdk";
         };
 
         devShells.default = self.devShells.${system}.android;

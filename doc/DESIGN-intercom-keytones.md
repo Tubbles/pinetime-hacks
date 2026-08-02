@@ -59,13 +59,13 @@ Hang-up goes over the pre-existing path: InCall app → `AlertNotificationServic
 
 - **Rejected: acoustic ToneGenerator app** (no uplink API, AEC suppresses exactly this signal; would ship a coin-flip). The Fossify receiver is barely more code and is deterministic.
 - **Rejected: porting `com.android.dialer`** (Soong-only, much larger than DeskClock; the Fossify fork is the same maneuver that worked for the clock).
-- **Rejected: Gadgetbridge fork** for multi-package delivery or native DTMF — GB can't inject DTMF anyway (not the dialer), and the hub forwarder is ~20 lines in an app we already own. The user has explicitly sanctioned a GB fork should it ever be needed; it stays the documented fallback if the hub pattern grows painful (e.g. a third consumer app), not part of v1.
+- **Rejected for v1, adopted in v1.1: Gadgetbridge fork.** V1 shipped on stock GB (it carries everything; a fork buys nothing for DTMF). The user then asked for the call-state upgrade, so Gadgetbridge T now exists (based on 0.92.2): it writes 1/0 to the call-state characteristic `00080002` on call established/ended (`CALL_START`/`CALL_OUTGOING`/`CALL_ACCEPT` vs `CALL_END`/`CALL_REJECT`; ringing deliberately excluded — the incoming-call alert has its own UI), and the watch opens/closes the InCall screen on it. Everything still degrades gracefully to stock GB (the characteristic is simply never written; the screen is manual). Side-by-side install required renaming the hardcoded Pebble content-provider authority, not just the applicationId (`INSTALL_FAILED_CONFLICTING_PROVIDER` otherwise), and the launcher label lives in `title_activity_controlcenter`, not `app_name`. The hub forwarder stays in the Clock fork; GB still targets one package.
 - Digit payload is raw ASCII (1 byte), not a versioned frame: single-purpose characteristic, mirrors the ANS event convention; a v2 can add a second characteristic if ever needed.
 - Mute stays on the incoming-call preview only; the in-call screen offers hang-up + keys (scope: the user's stated flow).
 
 ## v1 limitations
 
-- No auto-dismiss: when the far end hangs up, the InCall screen stays until the user backs out (no call-ended signal exists anywhere in the chain; see fact 1).
+- No auto-dismiss ON STOCK GADGETBRIDGE: when the far end hangs up, the InCall screen stays until the user backs out. RESOLVED in v1.1 with Gadgetbridge T (see the adopted-fork bullet above): the screen opens on call establishment and dismisses on call end, including after a watch-initiated hang-up (Reject -> endCall -> CALL_END -> dismiss).
 - The InCall app is always launchable, call or no call. Harmless: digits no-op without an active call, and hang-up's `endCall()` simply returns false.
 - Key presses are fire-and-forget (no delivery ack from the phone); the haptic confirms the watch sent it, not that the door heard it.
 
