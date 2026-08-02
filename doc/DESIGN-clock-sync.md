@@ -71,7 +71,7 @@ Frame layout:
 - `[2]` state: stopwatch { 0 cleared, 1 running, 2 paused }; timer { 0 stopped, 1 running, 2 expired }.
 - `[3]` reserved, 0.
 - `[4..7]` uint32 value_ms.
-- `[8..15]` int64 reference_epoch_ms (UTC milliseconds; InfiniTime's RTC is CTS-synced so both sides share this base).
+- `[8..15]` int64 reference_epoch_ms (UTC milliseconds). Caution: InfiniTime's CTS-synced RTC runs on *local* time, so the firmware must use `DateTime::UTCDateTime()` (backed by the tz/DST offsets Gadgetbridge writes to the Local Time characteristic), never `CurrentDateTime()`, or every reference skews by the UTC offset.
 
 Semantics (each side computes live time locally, so no per-tick traffic):
 - Stopwatch running: `reference_epoch_ms` = now - current_elapsed (a "start-equivalent" wall time); consumer renders `elapsed = now - reference`. `value_ms` unused.
@@ -115,7 +115,7 @@ GrapheneOS notes: notification access is NOT needed (the fork owns its `DataMode
 ## Sync semantics
 
 - State transitions + a reference timestamp only, never per-tick. Each side computes elapsed/remaining locally. BLE delivers notifications only at connection events with jitter >= the 1 Hz tick, so per-tick sync would be both wasteful and inexact.
-- Common time base: wall clock. InfiniTime's RTC is CTS-synced to the phone, so both sides share a wall-clock reference. Stopwatch snapshot: `{state in reset|running|paused, accumulated_ms, running_since_wallclock}`; each side renders `accumulated + (now - running_since)` while running. Timer snapshot: `{state, target_wallclock}` (or `remaining_at_pause`); each side renders `target - now`.
+- Common time base: UTC epoch. The phone side uses `System.currentTimeMillis()` directly; the watch derives it as `UTCDateTime()` = CTS-synced local RTC minus the tz/DST offsets from the Local Time characteristic (the RTC itself runs on local time). Stopwatch snapshot: `{state in reset|running|paused, accumulated_ms, running_since_wallclock}`; each side renders `accumulated + (now - running_since)` while running. Timer snapshot: `{state, target_wallclock}` (or `remaining_at_pause`); each side renders `target - now`.
 - Full snapshots, idempotent, last-writer-wins. A dropped or late packet self-corrects on the next snapshot; applying an identical snapshot is a no-op (also the echo-suppression mechanism).
 
 ## Build, flash, test
