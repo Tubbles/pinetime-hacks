@@ -57,12 +57,19 @@ public final class ClockSyncBridge {
     static final String CONTROL_CHARACTERISTIC_UUID = "00070001-78fc-48fe-8e23-433b3a1942d0";
     static final String STATE_CHARACTERISTIC_UUID = "00070002-78fc-48fe-8e23-433b3a1942d0";
 
+    // Watch DTMF key presses (InfiniTime KeyTonesService.h). Not consumed
+    // here: forwarded to the dialer fork, because Gadgetbridge's Intent API
+    // can only target one package and this app is it.
+    static final String KEYTONES_CHARACTERISTIC_UUID = "00080001-78fc-48fe-8e23-433b3a1942d0";
+
     // SharedPreferences keys (DeskClock default prefs). See README for how to set.
     static final String PREF_WATCH_MAC = "clocksync_watch_mac";
     static final String PREF_GADGETBRIDGE_PACKAGE = "clocksync_gadgetbridge_package";
+    static final String PREF_DIALER_PACKAGE = "clocksync_dialer_package";
 
     private static final String DEFAULT_GADGETBRIDGE_PACKAGE =
             "nodomain.freeyourgadget.gadgetbridge";
+    private static final String DEFAULT_DIALER_PACKAGE = "com.tubbles.phone";
 
     private static final long UINT32_MAX = 0xFFFFFFFFL;
 
@@ -286,6 +293,18 @@ public final class ClockSyncBridge {
     }
 
     // --- Inbound: frame -> DataModel ----------------------------------------
+
+    /**
+     * Re-broadcasts a key-tone frame explicitly to the dialer fork, which
+     * plays it as DTMF on the active call. This app is the hub because
+     * Gadgetbridge's Intent API targets a single package.
+     */
+    public void forwardKeyTone(Intent original) {
+        final Intent forwarded = new Intent(original.getAction());
+        forwarded.setPackage(mPrefs.getString(PREF_DIALER_PACKAGE, DEFAULT_DIALER_PACKAGE));
+        forwarded.putExtras(original);
+        mAppContext.sendBroadcast(forwarded);
+    }
 
     /**
      * @return true if {@code deviceAddress} matches the configured watch MAC

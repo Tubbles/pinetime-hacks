@@ -45,6 +45,12 @@ public final class ClockSyncReceiver extends BroadcastReceiver {
         }
 
         final String characteristic = intent.getStringExtra(EXTRA_CHARACTERISTIC);
+        if (ClockSyncBridge.KEYTONES_CHARACTERISTIC_UUID.equalsIgnoreCase(characteristic)) {
+            // Watch DTMF key press: hand it to the dialer fork (this app is
+            // the single Gadgetbridge Intent API target, so it plays hub).
+            ClockSyncBridge.getInstance().forwardKeyTone(intent);
+            return;
+        }
         if (!ClockSyncBridge.STATE_CHARACTERISTIC_UUID.equalsIgnoreCase(characteristic)) {
             return; // not the ClockSync state characteristic
         }

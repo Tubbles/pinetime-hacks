@@ -150,6 +150,7 @@ The bridge reads two keys from the DeskClock default `SharedPreferences`:
 
 - `clocksync_watch_mac` (String) — the PineTime's Bluetooth MAC, uppercase colon form, e.g. `C1:9A:2B:3C:4D:5E`. Required in BOTH directions: with it empty the bridge logs a warning and sends nothing, and `ClockSyncReceiver` drops every inbound frame (frames are only applied when the broadcast's `EXTRA_DEVICE_ADDRESS` matches this MAC, so a second Gadgetbridge-managed device cannot drive the clock).
 - `clocksync_gadgetbridge_package` (String, optional) — defaults to `nodomain.freeyourgadget.gadgetbridge`. Set to `nodomain.freeyourgadget.gadgetbridge.nightly` if you run the Gadgetbridge nightly build.
+- `clocksync_dialer_package` (String, optional) — defaults to `com.tubbles.phone`. Target for forwarded key-tone frames (see "Hub role" below); set to `com.tubbles.phone.debug` when running the dialer fork's debug build.
 
 Because these live in the device-protected prefs on N+, the simplest robust way to set them is in the fork itself: add an `EditTextPreference` for each to `SettingsActivity`, or write them once programmatically (e.g. `prefs.edit().putString("clocksync_watch_mac", "C1:9A:...").apply();`) in a first-run block. Find the MAC in Gadgetbridge (device info) or Android's Bluetooth settings.
 
@@ -193,6 +194,8 @@ GrapheneOS note (from `doc/DESIGN-clock-sync.md`, treat as inference until confi
 Echo suppression: while an inbound frame is applied, an `mApplyingRemote` flag stops the bridge's own listeners from re-broadcasting it; transitions are also idempotent (mutate only when the state actually differs), and identical outbound frames are de-duplicated against the last one sent. The dedup cache is dropped on every `ACTION_ACL_CONNECTED` before the resync: frames broadcast while the link was down are lost (no delivery queue), so the byte-identical resync frame must not be suppressed.
 
 Security note (accepted v1 risk): `ClockSyncReceiver` is exported and Gadgetbridge's broadcasts are unsigned, so any app on the phone that knows the watch MAC could forge a `CHARACTERISTIC_CHANGED` broadcast and start/stop the stopwatch or a timer. There is no clean sender check for unsigned broadcasts; the worst case is a nuisance state change.
+
+Hub role (key tones): Gadgetbridge's Intent API targets a single package, and this app is it. `ClockSyncReceiver` therefore also receives the watch's DTMF key-tone frames (characteristic `00080001-...`, from the InfiniTime KeyTonesService) and re-broadcasts them, explicitly targeted, to the dialer fork (`clocksync_dialer_package`), which plays them on the active call. The MAC filter applies before forwarding. See `doc/DESIGN-intercom-keytones.md`.
 
 ## Relation to the shipping fork
 
