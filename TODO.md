@@ -45,9 +45,11 @@ Waking via raise-wrist shows the screen but rejects touch until the physical but
 
 Remaining: on-device verification together with clock sync (raise-lock, button unlock, tap/shake/button wakes stay unlocked, alarm and ringing timer clear the lock, indicator swap on the G7710 face).
 
-## Planned: 5. Extended-Latin (åäö) in watch notifications
+## Implemented, pending device verification: 5. Extended-Latin (åäö) in watch notifications
 
-InfiniTime's notification font does not render Swedish characters (å, ä, ö at least), so Swedish text messages show wrong/missing glyphs. Add extended-Latin coverage to the notification font so Swedish (and similar) text renders correctly. Likely a font-generation/charset change (the notification/default font is built from a glyph range); check `src/displayapp/fonts/` and the `lv_font` generation config.
+The default UI font now carries Latin-1 Supplement (0xC0-0xFF: åäöÅÄÖ plus üßéø etc., +1932 B flash), and the Alert Notification Service trims a UTF-8 sequence cut in half by the 100-byte message cap. InfiniTime commit `82a60eae`, compile-verified; details in `doc/LOG.md` ([infinitime] 2026-08-02 åäö entry).
+
+Remaining: on-device verification (send a Swedish text through Gadgetbridge, check å/ä/ö render on the Notifications screen and that a >100-byte message ends cleanly).
 
 ## Planned: 6. Send key tones from the phone app to the watch
 
