@@ -22,7 +22,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Init the InfiniTime submodule
-        run: git submodule update --init InfiniTime
+        # --recursive scoped to this path: InfiniTime vendors lvgl/littlefs/
+        # nimble as its own nested submodules.
+        run: git submodule update --init --recursive InfiniTime
 
       - name: Build OTA DFU
         # Mount the whole repo (not just InfiniTime) so git version detection
