@@ -394,6 +394,9 @@ public final class ClockSyncBridge {
         // length (deleteAfterUse so it cleans up on reset) rather than adopting an
         // existing paused timer. See README for this v1 limitation.
         final Timer created = dataModel.addTimer(remaining, "", true /* deleteAfterUse */);
+        // NOTE for forks whose addTimer takes a buttonTime (e.g. BlackyHawky):
+        // it must be a parseable number of minutes, not "" — the timer list
+        // renders it with Long.parseLong and crashes otherwise.
         dataModel.startTimer(created);
     }
 
