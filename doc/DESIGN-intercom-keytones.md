@@ -59,7 +59,7 @@ Hang-up goes over the pre-existing path: InCall app → `AlertNotificationServic
 
 - **Rejected: acoustic ToneGenerator app** (no uplink API, AEC suppresses exactly this signal; would ship a coin-flip). The Fossify receiver is barely more code and is deterministic.
 - **Rejected: porting `com.android.dialer`** (Soong-only, much larger than DeskClock; the Fossify fork is the same maneuver that worked for the clock).
-- **Rejected: Gadgetbridge fork** for multi-package delivery or native DTMF — GB can't inject DTMF anyway (not the dialer), and the hub forwarder is ~20 lines in an app we already own.
+- **Rejected: Gadgetbridge fork** for multi-package delivery or native DTMF — GB can't inject DTMF anyway (not the dialer), and the hub forwarder is ~20 lines in an app we already own. The user has explicitly sanctioned a GB fork should it ever be needed; it stays the documented fallback if the hub pattern grows painful (e.g. a third consumer app), not part of v1.
 - Digit payload is raw ASCII (1 byte), not a versioned frame: single-purpose characteristic, mirrors the ANS event convention; a v2 can add a second characteristic if ever needed.
 - Mute stays on the incoming-call preview only; the in-call screen offers hang-up + keys (scope: the user's stated flow).
 
