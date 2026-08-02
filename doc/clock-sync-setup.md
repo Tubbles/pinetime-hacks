@@ -40,7 +40,7 @@ GrapheneOS note: the BLE Intent API toggles may be greyed out as a "restricted s
 
 ## 3. Clock app (phone)
 
-Build and install the DeskClock fork with the ClockSync bridge; see `phone/clocksync/README.md` for the fork/build steps and where the watch MAC address is configured. It must be installed under the applicationId you set as the Gadgetbridge package filter above.
+Install Clock T (CI artifact `clocksync-clock-apk`, applicationId `com.tubbles.deskclock.debug`). Its deployment config (watch MAC, Gadgetbridge T package, Phone T debug package) is baked in, so there is nothing to configure — but the applicationId must match the Gadgetbridge package filter set above. Bridge internals and the preference override keys are documented in `phone/clocksync/README.md`.
 
 ## 4. Verify clock sync
 

@@ -1,13 +1,21 @@
 # pinetime-hacks
 
-Personal hacking playground for a PineTime smartwatch (InfiniTime firmware, Gadgetbridge companion on Android).
+Personal hacking playground for a PineTime smartwatch (InfiniTime firmware, Gadgetbridge companion on Android/GrapheneOS). Upstream projects are forked as git submodules with this repo as the master; the deployed Android apps follow the "T" naming scheme (Clock T, Phone T, Gadgetbridge T) and install alongside their originals.
 
-First project: display the "time of next event" — the next predicted sleep or wake-up time from the Napper baby-sleep app on the phone — in the bottom-left corner of the Casio G7710 watch face, in place of the heart-rate BPM indicator whenever heart rate is not in use. Fully automatic; no manual input per event.
+Features:
 
-See `doc/DESIGN.md` for the plan, `doc/research-*.md` for the grounded research behind it, and `doc/LOG.md` for the running log of findings.
+1. **Clock sync** (implemented, in field verification) — the clock app's stopwatch and timer sync with the watch in both directions, via a custom InfiniTime ClockSync BLE service and Gadgetbridge's BLE Intent API. Design: `doc/DESIGN-clock-sync.md`.
+2. **Scheduled brightness + silent mode** (planned) — watch-configured schedule switches brightness and silent mode.
+3. **Wrist-raise lock** (implemented, pending field verification) — raise-wrist wake shows the screen but rejects touch until the button unlocks. Design: `doc/DESIGN-lock-screen.md`.
+4. **Next-event corner** (parked) — Napper's next sleep/wake time in the Casio G7710 corner. Design: `doc/DESIGN.md`.
+5. **åäö in notifications** (implemented, pending field verification) — Latin-1 Supplement glyphs plus UTF-8-safe message truncation.
+6. **In-call key tones** (implemented, in field verification) — an in-call watch app with hang-up, DTMF numberpad, and a configurable intercom key, so the intercom door opens from the watch. Design: `doc/DESIGN-intercom-keytones.md`.
 
-Shape of the system (three independent legs):
+Start here:
 
-1. Extraction (phone): read Napper's predicted next sleep/wake time, automatically. Napper has no API, so the working hook is parsing its own reminder notification.
-2. Transport (phone to watch): Gadgetbridge's BLE Intent API (v0.82.0+) writes a small timestamp to a custom InfiniTime BLE characteristic. No Gadgetbridge fork.
-3. Display (watch): a custom InfiniTime build stores the timestamp and renders it in the G7710 heart-rate corner when heart rate is not in use.
+- `CLAUDE.md` — repo layout, submodules, build/CI, workflow.
+- `TODO.md` — current state and outstanding work.
+- `doc/clock-sync-setup.md` — the runbook: installing and configuring firmware + the three apps.
+- `doc/LOG.md` — the running log of findings, gotchas, and dead ends.
+
+CI on every push builds the OTA firmware (`pinetime-mcuboot-app-dfu`) and the three APKs (`clocksync-clock-apk`, `keytones-dialer-apk`, `gadgetbridge-t-apk`) as downloadable artifacts.

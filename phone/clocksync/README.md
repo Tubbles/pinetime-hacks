@@ -1,8 +1,8 @@
 # ClockSync phone bridge (DeskClock fork side)
 
-The phone half of the stopwatch/timer sync between the GrapheneOS clock app (a fork of AOSP DeskClock, `com.android.deskclock`) and a PineTime watch running InfiniTime's custom **ClockSync** BLE service. Stock Gadgetbridge (>= 0.84.0) is the transport; nothing in Gadgetbridge is modified. The watch firmware and wire protocol are defined in this repo at `InfiniTime/src/components/ble/ClockSyncService.{h,cpp}` and `doc/DESIGN-clock-sync.md`.
+The phone half of the stopwatch/timer sync between an Android clock app and a PineTime watch running InfiniTime's custom **ClockSync** BLE service. The transport is Gadgetbridge's BLE Intent API; the deployment runs the Gadgetbridge T fork (`phone/gadgetbridge-app`), but stock Gadgetbridge (>= 0.84.0) also carries the sync — the fork only adds call-state forwarding on top. The watch firmware and wire protocol are defined in this repo at `InfiniTime/src/components/ble/ClockSyncService.{h,cpp}` and `doc/DESIGN-clock-sync.md`.
 
-**Status: NOT built or run here.** This environment has no Android SDK or Gradle, so these sources were never compiled. They are written against the real DeskClock API as read from the `deskclock/` submodule (a pristine upstream checkout) and against the real Gadgetbridge `BleIntentApi.java`. Every load-bearing signature and string below is tagged *verified* with a `file:line` or URL. You must compile and test on device (see "Fork and build" and "Test").
+**Status: this directory is the canonical, plain-JVM copy — the plan below has been executed.** The shipping variant lives in the `phone/deskclock-app` submodule (Clock T), is built by CI (`clocksync-clock-apk`), and runs on the actual phone; see "Relation to the shipping fork" at the bottom for the deliberate divergences. These canonical sources themselves are compiled only as far as the plain-JVM codec test (`test/`); the API tables below were written against the `deskclock/` submodule (pristine AOSP checkout) and Gadgetbridge's real `BleIntentApi.java`, each tagged *verified* with a `file:line` or URL. For live setup steps use `doc/clock-sync-setup.md`, which supersedes the setup sections here where they differ.
 
 ## Files
 
@@ -152,7 +152,7 @@ The bridge reads two keys from the DeskClock default `SharedPreferences`:
 - `clocksync_gadgetbridge_package` (String, optional) — defaults to `nodomain.freeyourgadget.gadgetbridge`. Set to `nodomain.freeyourgadget.gadgetbridge.nightly` if you run the Gadgetbridge nightly build.
 - `clocksync_dialer_package` (String, optional) — defaults to `com.tubbles.phone`. Target for forwarded key-tone frames (see "Hub role" below); set to `com.tubbles.phone.debug` when running the dialer fork's debug build.
 
-Because these live in the device-protected prefs on N+, the simplest robust way to set them is in the fork itself: add an `EditTextPreference` for each to `SettingsActivity`, or write them once programmatically (e.g. `prefs.edit().putString("clocksync_watch_mac", "C1:9A:...").apply();`) in a first-run block. Find the MAC in Gadgetbridge (device info) or Android's Bluetooth settings.
+Because these live in the device-protected prefs on N+, the simplest robust way to set them is in the fork itself. Clock T does exactly that: the deployment values (watch MAC, Gadgetbridge T package, Phone T debug package) are baked in via `BuildConfig` and seeded into the prefs at first run, so an installed Clock T needs no configuration; the prefs remain the override mechanism. Find the MAC in Gadgetbridge (device info) or Android's Bluetooth settings.
 
 ### 4. Gadgetbridge setup (stock app, on the phone)
 
@@ -164,7 +164,7 @@ On the PineTime device entry in Gadgetbridge, open Device Settings -> Developer 
 - Set the BLE-characteristics filter (`PREFS_KEY_DEVICE_BLE_API_CHARACTERISTIC`) to the state UUID `00070002-78fc-48fe-8e23-433b3a1942d0` (recommended).
 - Reconnect the watch afterward (Gadgetbridge subscribes to notifications at service discovery), and if the ClockSync characteristic is newly appearing, remove and re-add the device once to clear Android's stale GATT service cache.
 
-GrapheneOS note (from `doc/DESIGN-clock-sync.md`, treat as inference until confirmed on device): the BLE Intent API toggles can be a "restricted setting" for sideloaded apps on Android 13+, so you may need to open Gadgetbridge's app-info and "Allow restricted settings" before the toggles appear. Notification access is NOT required (the fork owns its `DataModel`; nothing is scraped from notifications).
+GrapheneOS note (confirmed on device): the BLE Intent API toggles can be a "restricted setting" for sideloaded apps on Android 13+, so you may need to open Gadgetbridge's app-info and "Allow restricted settings" before the toggles appear. Notification access is NOT required for the sync (the fork owns its `DataModel`; nothing is scraped from notifications).
 
 ## (d) Fork and build
 
@@ -175,7 +175,7 @@ GrapheneOS note (from `doc/DESIGN-clock-sync.md`, treat as inference until confi
 - Drop these three files into the fork at the path matching the package, `.../java/com/android/deskclock/clocksync/` (exact prefix depends on the Gradle module layout, typically `app/src/main/java/...`).
 - Build the APK in Android Studio and install it.
 
-**Not done here:** the fork, the Gradle port, the `applicationId` rename, the manifest edit, the `SettingsActivity` preference, and any compilation. This directory contains only the bridge sources and this guide.
+**All of the above has been executed** in the shipping fork (see "Relation to the shipping fork"): instead of Gradle-porting the Soong-only GrapheneOS tree, the fork rebased onto BlackyHawky/Clock tag 2.20, whose Gradle toolchain matched and whose `DataModel` stays close to AOSP. This directory itself contains only the canonical bridge sources and this guide.
 
 ### Watch side and test
 
