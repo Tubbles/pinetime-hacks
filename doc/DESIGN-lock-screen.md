@@ -1,6 +1,6 @@
 # Design: wrist-raise lock screen
 
-Status: design, ready to implement. Research provenance: an InfiniTime source read on 2026-08-01 against the `clock-sync` branch (base 1.16.1); load-bearing claims are cited to `file:line` below and were verified in that pass.
+Status: design, ready to implement. Research provenance: an InfiniTime source read on 2026-08-01 against the `clock-sync` branch (base 1.16.1); load-bearing claims are cited to `file:line` below and were verified in that pass. Re-verified 2026-08-02 by an independent adversarial source read: every cited line held; the corrections it produced are folded in below (single-source flag in Settings, timer-expiry clear, unlock placement, glyph restore) and the touch choke point was proven complete (LVGL's indev callback only reads state cached by `DisplayApp`'s `TouchEvent` handler, whose sole producer is the SystemTask push at `SystemTask.cpp:276`; `LittleVgl.cpp:237,271-280`, `DisplayApp.cpp:406`).
 
 ## Goal
 
@@ -39,50 +39,52 @@ if (state == SystemTaskState::Running && locked) break;
 Skipping `ProcessTouchInfo` leaves `TouchHandler::IsTouching()` false, which disables both the gesture path (`SystemTask.cpp:276`) and the continuous raw-coordinate path (`DisplayApp.cpp:494-496`) — important because a raise-wake can land on a non-watchface app whose raw handler is live. Skipping the I2C read is safe: the touch IRQ is edge-triggered and re-asserts on the next touch. Swallowed touches never call `lv_disp_trig_activity`, so a locked screen still dims and sleeps on the normal timeout (a stray wrist-raise self-clears) — desirable, no change needed.
 
 ### 3. Unlock on button press
-Hook the single button funnel `SystemTask::HandleButtonAction()` (`:477-507`): while locked, the first resolved action clears the lock and is consumed (does not also act as back/sleep), modeled on the existing `fastWakeUpDone` consume pattern (`:298, 489, 506`):
+Hook the single button funnel `SystemTask::HandleButtonAction()` (`:477-507`): while locked, the first resolved action clears the lock and is consumed (does not also act as back/sleep). All action types (Click, DoubleClick, LongPress, LongerPress) resolve through this funnel (`ButtonHandler.cpp:35-73`), so the consume catches every one. Place the block AFTER the `displayApp.PushMessage(NotifyDeviceActivity)` at `:482`, so the unlock press also resets the dim/sleep inactivity timer (otherwise a near-timeout locked screen could sleep right after unlocking):
 
 ```cpp
-if (locked) {
-  if (action != Controllers::ButtonActions::None) { locked = false; fastWakeUpDone = false; }
+if (settingsController.IsLocked()) {
+  if (action != Controllers::ButtonActions::None) {
+    settingsController.SetLocked(false);
+  }
   return; // press only unlocks
 }
 ```
 
-Unlock lands ~200 ms after button release (the Click resolution delay in `ButtonHandler.cpp:44-52`). Acceptable; instant-on-press is possible with extra state but not worth the code for v1.
+(No `fastWakeUpDone` juggling: it can only be true after a button wake, which never locks, so the combination is unreachable.) Unlock lands ~200 ms after button release (the Click resolution delay in `ButtonHandler.cpp:44-52`). Acceptable; instant-on-press is possible with extra state but not worth the code for v1.
 
 ### 4. Where the lock state lives
-`SystemTask` owns the flag (`bool locked = false;` + `bool IsLocked() const`). Also clear it in `GoToSleep()` (`:437-453`) so every entry into sleep leaves it clean — this closes the gap where a locked screen times out and is later woken by the button (that press breaks at `:300` before the unlock funnel runs).
+A single non-persisted runtime bool in `Settings` (`SetLocked`/`IsLocked`), modeled on the runtime-only `bleRadioEnabled` (`Settings.h:308-314, 397` — declared outside `SettingsData`, and persistence writes only the struct via `sizeof(settings)`, `Settings.cpp:32,45`, so it is provably never saved). Settings is the sole owner: SystemTask sets/clears it through its existing `settingsController`, the face reads it through its own — one source of truth, no constructor changes anywhere. (An earlier draft had SystemTask own the flag with Settings as a mirror; that invites drift and was dropped.)
 
-How the face reads it — two options:
-- Option B (recommended, lowest churn): store the flag as a non-persisted runtime bool in `Settings` with `SetLocked`/`IsLocked`, modeled on the runtime-only `bleRadioEnabled` (`Settings.h:308-314, 397`). Both SystemTask and the face already hold `Settings&`, so no constructor changes anywhere.
-- Option A (more semantically correct, small churn): the face reads `systemTask->IsLocked()`. `AppControllers` already carries a `SystemTask*` (`Controllers.h:52`), but the G7710 `Create()`/constructor would need it added (`WatchFaceCasioStyleG7710.h:110-119`).
+Clear it in `GoToSleep()` (`:437-453`) so every entry into sleep leaves it clean — this closes the gap where a locked screen times out and is later woken by the button: that press breaks at `:300` before the unlock funnel runs, so without the sleep-clear a button-wake would come up locked. The same function covers AOD entry.
 
 ### 5. G7710 lock indicator
 The bottom-left slot is `heartbeatIcon` + `heartbeatValue` (`WatchFaceCasioStyleG7710.cpp:151-159`); when HR is not running it is dimmed and blank (`:294-305`). Add a `Utility::DirtyValue<bool> lockedState`; in `Refresh()`, when locked set `heartbeatIcon` to a lock glyph in full color, else fall back to the existing HR logic.
 
-Glyph: `Symbols.h` has no padlock, but `Symbols::shieldAlt` (U+F3ED) exists and is already in the default font. Recommended for v1: reuse `shieldAlt`. For a true padlock, add U+F023 to the `jetbrains_mono_bold_20` FontAwesome range (`fonts.json:10`), regenerate with `fonts/generate.py`, and add a `lock` symbol.
+Glyph: `Symbols.h` has no padlock, but `Symbols::shieldAlt` (U+F3ED, `Symbols.h:11`) exists and is confirmed present in the font the label actually uses: `heartbeatIcon` has no font override, so it renders with `theme.font_normal = jetbrains_mono_bold_20` (`InfiniTimeTheme.cpp:222`), whose FontAwesome range ends `..., 0xf1ec, 0xf55a, 0xf3ed` (`src/displayapp/fonts/fonts.json:10` — note the full path; the same-named `src/resources/fonts.json` holds only watch-face fonts). Recommended for v1: reuse `shieldAlt`. For a true padlock, add U+F023 to that range, regenerate with `fonts/generate.py`, and add a `lock` symbol.
+
+Restore on unlock: the ctor sets `heartbeatIcon` to `Symbols::heartBeat` once (`:152`), so `Refresh()` must not only swap in `shieldAlt` while locked but also explicitly restore `heartBeat` when the lock clears — otherwise the shield sticks until the screen is recreated.
 
 Coexistence: the lock glyph and the HR icon share the same slot; lock wins while locked (HR suppressed for the lock's short duration). Any future use of that corner (e.g. the parked next-event idea) must check the lock flag first. If simultaneous display is ever needed, add a separate small `lockIcon` label instead of repurposing `heartbeatIcon`.
 
 ## Implementation outline (file by file)
 
-1. `src/systemtask/SystemTask.h` — `bool locked = false;` + `bool IsLocked() const`.
-2. `src/systemtask/SystemTask.cpp` — set lock on raise-from-sleep in `UpdateMotion()`; reject touch in the `OnTouchEvent` handler; consume-and-unlock in `HandleButtonAction()`; clear in `GoToSleep()`.
-3. Lock-flag storage — Option B: runtime `locked` bool in `Settings.h` (model on `bleRadioEnabled`); Option A: face gets `SystemTask*`.
-4. `src/displayapp/screens/WatchFaceCasioStyleG7710.cpp` — `Refresh()` swaps `heartbeatIcon` to the lock glyph while locked; add `DirtyValue<bool> lockedState`.
-5. `src/displayapp/screens/Symbols.h` — reuse `shieldAlt`, or add `lock` (U+F023).
-6. Only for a true padlock: `fonts/fonts.json` + regenerate.
+1. `src/components/settings/Settings.h` — runtime-only `bool locked = false;` (outside `SettingsData`, next to `bleRadioEnabled`) + `SetLocked`/`IsLocked`.
+2. `src/systemtask/SystemTask.cpp` — set lock on raise-from-sleep in `UpdateMotion()`; reject touch in the `OnTouchEvent` handler; consume-and-unlock in `HandleButtonAction()` (after the `NotifyDeviceActivity` push); clear in `GoToSleep()`, in `SetOffAlarm`, and in the `Messages::GoToRunning` case (timer expiry, see Decisions).
+3. `src/displayapp/screens/WatchFaceCasioStyleG7710.{h,cpp}` — add `DirtyValue<bool> lockedState`; `Refresh()` swaps `heartbeatIcon` to `shieldAlt` while locked and restores `heartBeat` when it clears.
+4. `src/displayapp/screens/Symbols.h` — no change (reuse `shieldAlt`); only a true padlock needs `src/displayapp/fonts/fonts.json` + regenerate.
 
 ## Decisions (recommended defaults; adjust as you like)
 
-- Lock-state storage: Option B, runtime Settings flag (least churn).
+- Lock-state storage: single runtime Settings flag (see section 4).
 - Indicator glyph: reuse `shieldAlt` for v1; true padlock is optional polish.
-- Alarm while locked (highest-risk interaction): an alarm wakes and loads the Alarm screen, which is silenced by touch — but touch is blocked while locked, so the user could not silence it (the button would just unlock). Recommended: clear the lock when an alarm fires (`SetOffAlarm`, `SystemTask.cpp:239-242`).
-- Notification while locked: recommended to leave it view-only (lock stays; the notification preview shows but is non-interactive).
-- Raise-wake onto a non-watchface app: touch is still blocked (the safety goal is met), but there is no lock indicator there (the indicator only exists on the G7710 face). Recommended: accept for v1; scoping the lock to the watch face only would need extra `currentApp` plumbing SystemTask doesn't have today.
+- Alarm while locked (highest-risk interaction): an alarm wakes and loads the Alarm screen, dismissable by touch or by the physical button (`Alarm.cpp:142-147, 171-181`) — but while locked, touch is blocked AND the button is consumed by the unlock funnel, so both routes are dead. Clear the lock when an alarm fires (`SetOffAlarm`, `SystemTask.cpp:239-242`).
+- Timer expiry while locked (same hazard, found in the 2026-08-02 re-read): a ringing timer is silenced by touch or by backing out with the button — both blocked while locked (the buzzing does auto-stop after 10 s, `Timer.cpp:128-132`, so it is milder than the alarm). Clear the lock in the `System::Messages::GoToRunning` case (`SystemTask.cpp:220-222`); its sole sender is DisplayApp's timer-expiry handler (`DisplayApp.cpp:377`), so this is exactly the timer-rings moment.
+- Notification while locked: view-only (lock stays; the preview shows but is non-interactive). Note the converse for consistency: a notification or chime that itself wakes the screen comes up UNLOCKED (`SystemTask.cpp:231-237, 344-359` never set the lock) — only raise-wrist locks, and those wakes are not raise-wrist.
+- Raise-wake onto a non-watchface app: touch is still blocked (the safety goal is met), but there is no lock indicator there (the indicator only exists on the G7710 face). Accept for v1; scoping the lock to the watch face only would need extra `currentApp` plumbing SystemTask doesn't have today. (DisplayApp only resets Launcher/Notifications/QuickSettings/Settings to Clock on sleep, `DisplayApp.cpp:326-332`; other apps persist and can be raise-woken into.)
 - Shake wake stays unlocked (only raise-wrist locks).
 
-## Open risks
+## Residual notes (verified, accepted)
 
-- AOD: raise wakes `AODSleeping -> Running`; the lock logic applies unchanged, but verify the indicator renders across the transition.
-- The alarm and non-watchface-app cases above are the two behaviors most worth deciding before implementing.
+- AOD: `IsSleeping()` is true in `AODSleeping` (`SystemTask.h:100-102`), so a raise from AOD locks as intended; the indicator paints normally once Running.
+- Touch suppression precision: skipping `ProcessTouchInfo` freezes `TouchHandler::IsTouching()` at its last value rather than forcing false. That last value is effectively always false (the pre-sleep touch ended in a release), so DisplayApp's continuous raw-coordinate path (`DisplayApp.cpp:494-496`) stays dormant; only raw-handler apps (InfiniPaint/Paddle) would ever care, and only if raise-woken mid-touch — accepted.
+- BLE-triggered loads while locked (pairing PassKey, firmware update, `SystemTask.cpp:248-251, 370-372`): wake unlocked or appear touch-blocked if a lock is live; both are informational screens, harmless.
