@@ -7,7 +7,7 @@ name: Phone app
 on:
   push:
     branches: [master]
-    paths: ['phone/deskclock-app', '.gitmodules', 'flake.lock', '.github/workflows/phone-app.yml']
+    paths: ['phone/deskclock-app', '.gitmodules', 'flake.lock', 'flake.nix', '.github/workflows/phone-app.yml']
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
 
       - uses: nix-community/cache-nix-action@v5
         with:
-          primary-key: nix-android-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          primary-key: nix-android-${{ runner.os }}-${{ hashFiles('flake.lock', 'flake.nix') }}
           restore-prefixes-first-match: nix-android-${{ runner.os }}-
           gc-max-store-size-linux: 8G
           purge: true

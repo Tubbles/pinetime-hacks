@@ -10,3 +10,7 @@
 	path = phone/deskclock-app
 	url = https://github.com/Tubbles/Clock.git
 	branch = clocksync
+[submodule "phone/dialer-app"]
+	path = phone/dialer-app
+	url = https://github.com/Tubbles/Phone.git
+	branch = keytones

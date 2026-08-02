@@ -17,12 +17,12 @@
           };
         };
 
-        # Android SDK for building the phone-side clock-sync app (a Gradle port
-        # of the DeskClock fork plus phone/clocksync/). DeskClock is pure
-        # Java/androidx, so no NDK is needed.
+        # Android SDK for building the phone-side apps: the Clock fork
+        # (compileSdk 35) and the Fossify Phone dialer fork (compileSdk 36).
+        # Pure Java/Kotlin + androidx, so no NDK is needed.
         androidSdk = (pkgs.androidenv.composeAndroidPackages {
-          platformVersions = [ "35" "34" ];
-          buildToolsVersions = [ "35.0.0" ];
+          platformVersions = [ "36" "35" "34" ];
+          buildToolsVersions = [ "36.0.0" "35.0.0" ];
           includeNDK = false;
         }).androidsdk;
       in {
