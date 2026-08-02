@@ -41,9 +41,11 @@
           packages = [ pkgs.openjdk17 ];
         };
 
-        # Gadgetbridge T needs a newer toolchain than the other apps: JDK 21
-        # and build-tools 36.1.0. Gradle 9.5.1 comes from the repo's own
-        # wrapper (network fetch on first run), so no nix gradle here.
+        # JDK 21 shell for Gadgetbridge T tooling. NOTE: the GB build itself
+        # cannot run against this SDK: GB compiles against the minor-versioned
+        # platform 36.1, which AGP auto-installs into the SDK at build time —
+        # impossible in the read-only Nix store. CI (gadgetbridge.yml)
+        # therefore builds GB with the runner's writable preinstalled SDK.
         devShells.gadgetbridge = pkgs.mkShell {
           packages = [ androidSdk pkgs.openjdk21 ];
           ANDROID_HOME = "${androidSdk}/libexec/android-sdk";

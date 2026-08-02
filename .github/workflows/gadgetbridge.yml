@@ -1,13 +1,18 @@
 name: Gadgetbridge T
 
 # Builds Gadgetbridge T (the Gadgetbridge fork with PineTime call-state
-# forwarding) into a debug APK via the Nix gadgetbridge dev shell and uploads
-# it. Gradle 9.5.1 comes from the repo's own wrapper.
+# forwarding) into a debug APK and uploads it.
+#
+# Deliberately NOT built through the Nix shell: GB 0.92.2 compiles against
+# the minor-versioned SDK platform 36.1 (compileSdk { minorApiLevel = 1 }),
+# which AGP auto-installs into the SDK at build time — impossible in the
+# read-only Nix store, fine in the runner's writable preinstalled SDK.
+# Gradle 9.5.1 comes from the repo's own wrapper; JDK 21 from setup-java.
 
 on:
   push:
     branches: [master]
-    paths: ['phone/gadgetbridge-app', '.gitmodules', 'flake.lock', 'flake.nix', '.github/workflows/gadgetbridge.yml']
+    paths: ['phone/gadgetbridge-app', '.gitmodules', '.github/workflows/gadgetbridge.yml']
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -20,29 +25,17 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: cachix/install-nix-action@v27
+      - uses: actions/setup-java@v4
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - uses: nix-community/cache-nix-action@v5
-        with:
-          primary-key: nix-android-${{ runner.os }}-${{ hashFiles('flake.lock', 'flake.nix') }}
-          restore-prefixes-first-match: nix-android-${{ runner.os }}-
-          gc-max-store-size-linux: 8G
-          purge: true
-          purge-prefixes: nix-android-${{ runner.os }}-
-          purge-created: 0
-          purge-last-accessed: 0
-          purge-primary-key: never
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
 
       - name: Build mainline debug APK
         run: |
-          nix develop .#gadgetbridge -c bash -c '
-            set -e
-            cd phone/gadgetbridge-app
-            chmod +x gradlew
-            ./gradlew :app:assembleMainlineDebug --no-daemon --console=plain --stacktrace
-          '
+          cd phone/gadgetbridge-app
+          chmod +x gradlew
+          ./gradlew :app:assembleMainlineDebug --no-daemon --console=plain --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
