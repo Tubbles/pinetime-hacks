@@ -10,13 +10,15 @@ One-time migration first: apps installed from CI artifacts built before the stab
 
 Verification checklist, per feature:
 
-- Clock sync (idea 1): timer and stopwatch, both directions, correct times. The epoch fix (InfiniTime `dfbd9676`) is unverified on device — before it, phone->watch timers silently did nothing and watch->phone timers ran 2 h long.
+- Disconnect warning buzz (idea 7): two short buzzes when the BLE connection drops, screen stays off; verify it fires when walking out of range and does not fire spuriously mid-connection.
 - Wrist-raise lock (idea 3): raise-lock, button unlock consumed, tap/shake/button wakes stay unlocked, alarm and ringing timer clear the lock, shield indicator on the G7710 face.
 - åäö (idea 5): send a Swedish text through Gadgetbridge T; å/ä/ö render in the notification; a >100-byte message ends cleanly.
 - Key tones (idea 6): InCall auto-opens on outgoing and answered incoming calls and closes on hang-up; digits chime in-call; hang-up from the watch works mid-call (needs the Phone T with the 'E' handling, first shipped in run `84c195a`); physical button from the keypad view returns to the in-call view (InfiniTime `a92792be`, unverified); the intercom-key setting shows the key on the main view; the door test.
 - Gadgetbridge T resilience: entering the Intent API settings + reconnect must no longer stick at "Connecting" (GB T `6f2d749ba`, unverified). If any leg stays dead, enable "Write log files" in GB T, reconnect once, and check for `failed btle action, aborting transaction`.
 
-Known open v1 limitations (accepted, revisit on demand): ClockSync state characteristic is NOTIFY-only (no READ); timer expiry is not notified (phone derives it); stopwatch laps not synced; a watch-initiated stopwatch run cannot seed the phone's accumulated time; InfiniTime's timer has no pause, so phone-side pause maps to stopped.
+## Parked: 1. Clock sync (user decision 2026-08-03)
+
+Field verdict after the fourth on-device round: "it hardly works at all ... i dont think its useful enough of a feature for this level of issues." The code stays in the tree (firmware service, Clock T bridge, CI) but no further debugging until the user un-parks it. Next diagnostic step if resumed: GB T file log of one phone-side play press (see the runbook troubleshooting section), since the epoch fix (InfiniTime `dfbd9676`) has still never been verified as delivered on-device. Known open v1 limitations (accepted): state characteristic is NOTIFY-only (no READ); timer expiry is not notified (phone derives it); stopwatch laps not synced; a watch-initiated stopwatch run cannot seed the phone's accumulated time; InfiniTime's timer has no pause, so phone-side pause maps to stopped.
 
 ## Planned: 2. Scheduled brightness + silent mode
 

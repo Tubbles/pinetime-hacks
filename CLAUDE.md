@@ -6,12 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal hacking playground for a PineTime smartwatch running InfiniTime, paired to an Android phone (GrapheneOS) running Gadgetbridge. The repo hosts several features, worked one at a time; `TODO.md` tracks current state and what is parked. Undertakings and their status:
 
-1. Clock sync (implemented, in field verification) — the clock app's stopwatch and timer sync with the watch, both directions, both running in the background on the watch. Shipped as the Clock T fork + the InfiniTime ClockSync BLE service.
+1. Clock sync (parked, 2026-08-03 user decision) — the clock app's stopwatch and timer sync with the watch, both directions. Implemented (Clock T fork + the InfiniTime ClockSync BLE service) but field-flaky; the user judged it not worth further debugging for now. Code stays in the tree.
 2. Scheduled brightness + silent mode (planned) — on a watch-configured schedule, switch brightness and toggle silent mode (e.g. dim + silent at night).
 3. Wrist-raise lock (implemented, pending field verification) — waking via raise-wrist shows the screen but rejects touch until the physical button unlocks; shield indicator on the Casio G7710 face.
 4. Next-event corner (parked) — show a "time of next event" (Napper next sleep/wake) in the G7710 bottom-left corner. Parked pending outreach to Napper AB.
 5. Extended-Latin åäö in notifications (implemented, pending field verification) — Latin-1 Supplement glyphs in the UI font + UTF-8-safe truncation.
 6. In-call DTMF key tones (implemented, in field verification) — an InCall watch app (hang up, numberpad, configurable intercom key) so the intercom door can be opened from the watch; spans all four forks.
+7. Disconnect warning buzz (implemented, pending field verification) — two short buzzes when the BLE connection drops, no screen wake.
 
 Per-feature design docs live in `doc/` (`DESIGN-clock-sync.md`, `DESIGN-lock-screen.md`, `DESIGN-intercom-keytones.md`, `DESIGN.md` for the next-event corner); `doc/clock-sync-setup.md` is the runbook for installing/configuring the whole stack on the phone and watch. Upstream projects are forked with this repo as the master, as git submodules (see Repo layout); the deployed Android apps follow the "T" naming scheme (Clock T, Phone T, Gadgetbridge T) and install alongside their originals.
 
