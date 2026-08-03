@@ -1,6 +1,6 @@
 # Design: in-call DTMF key tones from the watch (intercom door)
 
-Status: design complete, ready to implement. Research provenance: two independent adversarial source reads on 2026-08-02 — InfiniTime at `82a60eae` (branch `clock-sync`, base 1.16.1) and Gadgetbridge at upstream `a7dff08` (codeberg clone) — plus Android API verification against developer.android.com/AOSP docs. Load-bearing claims are cited `file:line` or by URL.
+Status: implemented; current feature status is tracked in `README.md`. This file is the design record. Research provenance: two independent adversarial source reads on 2026-08-02 — InfiniTime at `82a60eae` (branch `clock-sync`, base 1.16.1) and Gadgetbridge at upstream `a7dff08` (codeberg clone) — plus Android API verification against developer.android.com/AOSP docs. Load-bearing claims are cited `file:line` or by URL.
 
 ## Goal
 
@@ -52,7 +52,7 @@ Hang-up goes over the pre-existing path: InCall app → `AlertNotificationServic
 
 1. **Dialer fork**: fork `github.com/FossifyOrg/Phone` → `Tubbles/Phone`, branch `keytones`, submodule `phone/dialer-app`. Rename `applicationId` to `com.tubbles.phone` (no system-app conflict — Fossify isn't preinstalled — but the rename avoids clashing with an F-Droid Fossify install; Kotlin package names stay `org.fossify.phone`, the DeskClock precedent). Add `KeyToneReceiver`: exported manifest receiver for the forwarded intent; validates the characteristic UUID (`00080001-...`), decodes the 1-byte hex payload, calls `CallManager.keypad(digit)`. `keypad` no-ops safely with no active call (`call?.` null-safe). The user sets it as default phone app (Settings → Apps → Default apps → Phone).
 2. **Clock fork hub**: add a small `KeyToneForwarder` to the clocksync package — when `CHARACTERISTIC_CHANGED` arrives with the KeyTones UUID (and the configured watch MAC), re-broadcast the same extras as an explicit intent to the dialer package (a `clocksync_dialer_package` pref, default `com.tubbles.phone`). The existing `ClockSyncReceiver` keeps handling the ClockSync UUID; both share the manifest receiver entry point.
-3. **Gadgetbridge config (stock)**: BLE Intent API on (both toggles, as today); characteristic filter = `00070002-...,00080001-...` (comma list); package filter stays the Clock fork. Reconnect + re-add once so the new GATT service is discovered (Android's service cache).
+3. **Gadgetbridge config**: the BLE Intent API setup (toggles, filters, reconnect, GATT-cache recovery) is owned by `doc/clock-sync-setup.md` section 2.
 4. **CI**: `phone-dialer.yml` building the Fossify fork debug APK via the Nix android shell, mirroring `phone-app.yml`. Toolchain compatibility (AGP/Gradle/SDK of the chosen Fossify tag vs the flake) to be pinned during implementation, same as the BlackyHawky 2.20 selection was.
 
 ## Decisions and rejected alternatives
@@ -71,7 +71,7 @@ Hang-up goes over the pre-existing path: InCall app → `AlertNotificationServic
 
 ## Verification plan (hardware)
 
-1. Flash the DFU; reconnect + re-add the watch in GB; set both toggles, char filter (both UUIDs), package filter (Clock fork). Re-do watch settings (version bump reset).
+1. Set up the firmware, apps, and Gadgetbridge per `doc/clock-sync-setup.md`.
 2. Install the dialer fork; set as default phone app; call the phone, answer, check the in-call screen's hang-up ends the call.
 3. Set "Intercom button" to 5; have the intercom call; answer; press the 5 button on the watch's in-call screen; the door must open (this validates the whole DTMF chain).
 4. Keypad screen: press digits against a DTMF decoder app or a second phone to hear tones.

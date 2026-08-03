@@ -1,6 +1,6 @@
 # Design: stopwatch + timer sync (GrapheneOS clock <-> PineTime)
 
-Status: draft, research complete, pending a few decisions (end of file).
+Status: implemented; current feature status is tracked in `README.md` (list) and `TODO.md` (reasoning). This file is the design record and the wire-protocol contract.
 
 Provenance: research done 2026-08-01 across InfiniTime internals, the AOSP/GrapheneOS clock app, and the Gadgetbridge transport. Claims here trace to that research; load-bearing facts are tagged verified (`file:line` or URL) or inference in the underlying agent findings. This file is the plan.
 
@@ -89,11 +89,7 @@ The BLE Intent API carries both directions (verified against `BleIntentApi.java`
 - phone->watch: broadcast `...ble_api.commands.CHARACTERISTIC_WRITE` with `EXTRA_DEVICE_ADDRESS`, `EXTRA_CHARACTERISTIC_UUID`, `EXTRA_PAYLOAD` (hex).
 - watch->phone: Gadgetbridge subscribes (CCCD write) at service discovery and rebroadcasts `...ble_api.events.CHARACTERISTIC_CHANGED` with `EXTRA_DEVICE_ADDRESS`, `EXTRA_CHARACTERISTIC` (note: not `_UUID`), `EXTRA_PAYLOAD` (hex).
 
-Setup on the PineTime device in Gadgetbridge (Developer / BLE Intent API):
-- Enable "Allow GATT interaction through BLE Intent API" (write/read).
-- Enable "Broadcast GATT notification Intents through BLE Intent API" (subscribe + rebroadcast).
-- Set the BLE-characteristics filter to the ClockSync UUID(s), and the BLE-API package filter to the clock fork's package.
-- Reconnect the watch afterward (subscription happens at service discovery), and re-add the device once after the new characteristic first appears to clear Android's stale GATT service cache.
+Setup steps (toggles, filters, reconnect, GATT-cache recovery) live in `doc/clock-sync-setup.md` section 2 — that runbook is the single owner of them.
 
 Version floor: both legs exist since 0.82.0; per-characteristic filtering since 0.84.0; current stable (0.92.x) has everything. No delivery queue in the Intent API path, so re-send state on `BLUETOOTH_CONNECTED`.
 
@@ -110,7 +106,7 @@ Bridge, built into the fork:
 - Register a receiver for `...events.CHARACTERISTIC_CHANGED` (read `EXTRA_CHARACTERISTIC` + `EXTRA_PAYLOAD`); apply the watch's snapshot to `DataModel` (watch->phone).
 - Echo suppression: guard `DataModel` mutations caused by an inbound snapshot so they do not immediately re-broadcast outward (an "applying remote" flag, or compare against the last-applied snapshot and skip if unchanged).
 
-GrapheneOS notes: notification access is NOT needed (the fork owns its `DataModel`, so no notification-scraping). The Gadgetbridge BLE Intent API toggles are a "restricted setting" for sideloaded apps on GrapheneOS/Android 13+ — the user must open Gadgetbridge's app-info and "Allow restricted settings" before the toggles appear.
+GrapheneOS notes: notification access is NOT needed (the fork owns its `DataModel`, so no notification-scraping). The restricted-settings hurdle for the Gadgetbridge toggles is covered in the runbook (section 2).
 
 ## Sync semantics
 
@@ -120,14 +116,12 @@ GrapheneOS notes: notification access is NOT needed (the fork owns its `DataMode
 
 ## Build, flash, test
 
-- Firmware: build `pinetime-mcuboot-app-dfu` from the InfiniTime fork via the official Docker image; OTA via Gadgetbridge's File Installer; do not Validate until BLE reconnect + a reboot survive.
+- Build commands are in `CLAUDE.md` "Building and CI"; flashing and safety flow in `doc/clock-sync-setup.md` section 1.
 - The GATT service can't be exercised in InfiniSim (BLE is simulated there), so the UI can be iterated in InfiniSim but the sync itself is tested on hardware.
 
 ## Repo / submodules
 
-- InfiniTime is already a submodule (pinned 1.16.1).
-- Clock app added as a submodule at `deskclock/`: `GrapheneOS/platform_packages_apps_DeskClock`, branch `17` (matches the device's Android 17). This is the authoritative source; the Gradle fork we actually build (renamed package) is derived from it.
-- Gadgetbridge stays stock (no submodule needed).
+See `CLAUDE.md` "Repo layout" for the live submodule inventory (it has grown past this design's assumptions, including a Gadgetbridge fork).
 
 ## Decisions (resolved)
 
@@ -136,7 +130,3 @@ GrapheneOS notes: notification access is NOT needed (the fork owns its `DataMode
 - Physical button backs out while running: required. Timer already does this; StopWatch needs the `OnButtonPushed` override removed (see Leg 1).
 - Watch UI for v1: reuse the existing StopWatch/Timer apps (they already reflect controller state); no new screen.
 
-## Remaining checks (non-blocking)
-
-- Confirm the installed Gadgetbridge is >=0.84.0 (for per-characteristic filtering; both legs work from 0.82.0). Current stable is well past this.
-- At firmware build time, confirm the InfiniTime version to base the fork on (submodule is pinned 1.16.1; rebase to a newer tag if desired before starting).

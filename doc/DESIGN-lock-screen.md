@@ -1,6 +1,6 @@
 # Design: wrist-raise lock screen
 
-Status: design, ready to implement. Research provenance: an InfiniTime source read on 2026-08-01 against the `clock-sync` branch (base 1.16.1); load-bearing claims are cited to `file:line` below and were verified in that pass. Re-verified 2026-08-02 by an independent adversarial source read: every cited line held; the corrections it produced are folded in below (single-source flag in Settings, timer-expiry clear, unlock placement, glyph restore) and the touch choke point was proven complete (LVGL's indev callback only reads state cached by `DisplayApp`'s `TouchEvent` handler, whose sole producer is the SystemTask push at `SystemTask.cpp:276`; `LittleVgl.cpp:237,271-280`, `DisplayApp.cpp:406`).
+Status: implemented; current feature status is tracked in `README.md`. This file is the design record. Research provenance: an InfiniTime source read on 2026-08-01 against the `clock-sync` branch (base 1.16.1); load-bearing claims are cited to `file:line` below and were verified in that pass. Re-verified 2026-08-02 by an independent adversarial source read: every cited line held; the corrections it produced are folded in below (single-source flag in Settings, timer-expiry clear, unlock placement, glyph restore) and the touch choke point was proven complete (LVGL's indev callback only reads state cached by `DisplayApp`'s `TouchEvent` handler, whose sole producer is the SystemTask push at `SystemTask.cpp:276`; `LittleVgl.cpp:237,271-280`, `DisplayApp.cpp:406`).
 
 ## Goal
 

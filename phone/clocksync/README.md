@@ -85,25 +85,12 @@ Two device preferences in Gadgetbridge shape delivery (verified in `BleIntentApi
 - `PREFS_KEY_DEVICE_BLE_API_PACKAGE` — when set, Gadgetbridge calls `intent.setPackage(intentApiPackage)` on the CHANGED broadcast. **Setting this to the fork's `applicationId` is required**, because a manifest-declared receiver receives an app-custom broadcast on Android 8+ only when it is package-targeted (explicit). Left blank, the broadcast is implicit and the OS will not deliver it to `ClockSyncReceiver`.
 - `PREFS_KEY_DEVICE_BLE_API_CHARACTERISTIC` — an optional per-characteristic allowlist checked before broadcasting. Recommended: set it to the state UUID so only ClockSync notifications are rebroadcast.
 
-## Wire protocol (matches firmware)
+## Wire protocol
 
-Fixed 16-byte little-endian frame, identical on both characteristics. This mirrors the firmware exactly; the authority is `InfiniTime/src/components/ble/ClockSyncService.cpp` (`ReadUInt32`/`ReadInt64`/`BuildStopWatchFrame`/`BuildTimerFrame`, verified) and `doc/DESIGN-clock-sync.md`.
+The frame layout and semantics are owned by `doc/DESIGN-clock-sync.md` ("ClockSync wire protocol (v1)"); the firmware implementation is `InfiniTime/src/components/ble/ClockSyncService.cpp`. Bridge-side notes verified against that firmware, beyond what the contract states:
 
-- `[0]` version = 1
-- `[1]` domain: 0 = stopwatch, 1 = timer
-- `[2]` state: stopwatch {0 cleared, 1 running, 2 paused}; timer {0 stopped, 1 running, 2 expired}
-- `[3]` reserved = 0
-- `[4..7]` uint32 `value_ms` (LE)
-- `[8..15]` int64 `reference_epoch_ms` (LE, UTC ms)
-
-Semantics the bridge implements (each side computes live time locally):
-
-- Stopwatch running: `reference = now_utc - elapsed`; watch renders `elapsed = now - reference`. `value_ms` = 0. The watch seeds its elapsed from `reference`, not from `value_ms` (verified ClockSyncService.cpp:104-108, :148), so `reference` is the load-bearing field here.
-- Stopwatch paused: `value_ms` = frozen elapsed (`getTotalTime()`); `reference` = 0.
-- Stopwatch cleared: zeros.
-- Timer running: `reference` = expiry wall-clock ms (`getWallClockExpirationTime()`); watch renders `remaining = reference - now`. `value_ms` = total length (`getTotalLength()`), for display. Note: the firmware ignores `value_ms` when applying a running timer and re-derives everything from `reference` (verified ClockSyncService.cpp:121-128), so `value_ms` here is cosmetic.
-- Timer stopped: `value_ms` = remaining/last duration; `reference` = 0.
-- Timer expired: state = 2.
+- The watch seeds a running stopwatch's elapsed from `reference`, not from `value_ms` (ClockSyncService.cpp:104-108, :148) — `reference` is the load-bearing field.
+- The firmware ignores `value_ms` when applying a running timer and re-derives everything from `reference` (ClockSyncService.cpp:121-128), so `value_ms` there is cosmetic.
 
 ## (c) Integration into the fork
 
@@ -154,17 +141,9 @@ The bridge reads two keys from the DeskClock default `SharedPreferences`:
 
 Because these live in the device-protected prefs on N+, the simplest robust way to set them is in the fork itself. Clock T does exactly that: the deployment values (watch MAC, Gadgetbridge T package, Phone T debug package) are baked in via `BuildConfig` and seeded into the prefs at first run, so an installed Clock T needs no configuration; the prefs remain the override mechanism. Find the MAC in Gadgetbridge (device info) or Android's Bluetooth settings.
 
-### 4. Gadgetbridge setup (stock app, on the phone)
+### 4. Gadgetbridge setup (on the phone)
 
-On the PineTime device entry in Gadgetbridge, open Device Settings -> Developer settings -> BLE Intent API and:
-
-- Enable "Allow GATT interaction through BLE Intent API" (the write path). (verified: `BLE_API_COMMAND_WRITE` handler)
-- Enable "Broadcast GATT notification Intents through BLE Intent API" (the subscribe + rebroadcast path). (verified: `CHARACTERISTIC_CHANGED` broadcaster)
-- Set the BLE-API package filter (`PREFS_KEY_DEVICE_BLE_API_PACKAGE`) to the fork's `applicationId` (e.g. `com.tubbles.deskclock`). Required, per (b).
-- Set the BLE-characteristics filter (`PREFS_KEY_DEVICE_BLE_API_CHARACTERISTIC`) to the state UUID `00070002-78fc-48fe-8e23-433b3a1942d0` (recommended).
-- Reconnect the watch afterward (Gadgetbridge subscribes to notifications at service discovery), and if the ClockSync characteristic is newly appearing, remove and re-add the device once to clear Android's stale GATT service cache.
-
-GrapheneOS note (confirmed on device): the BLE Intent API toggles can be a "restricted setting" for sideloaded apps on Android 13+, so you may need to open Gadgetbridge's app-info and "Allow restricted settings" before the toggles appear. Notification access is NOT required for the sync (the fork owns its `DataModel`; nothing is scraped from notifications).
+Owned by `doc/clock-sync-setup.md` section 2 (toggles, filters, reconnect requirement, GATT-cache recovery, GrapheneOS restricted-settings note). One bridge-relevant fact beyond the runbook: notification access is NOT required for the sync — the fork owns its `DataModel`; nothing is scraped from notifications.
 
 ## (d) Fork and build
 
@@ -179,8 +158,8 @@ GrapheneOS note (confirmed on device): the BLE Intent API toggles can be a "rest
 
 ### Watch side and test
 
-- Firmware: build `pinetime-mcuboot-app-dfu` from the InfiniTime fork and OTA it via Gadgetbridge's File Installer. Do not Validate the image until a BLE reconnect and a reboot both survive. (See `doc/DESIGN-clock-sync.md` and `doc/LOG.md`.)
-- The GATT path cannot be exercised in InfiniSim (BLE is simulated there); test the sync on hardware. Sanity-check `ClockSyncFrame` with a plain-JVM unit test (encode a known frame, assert the 16 bytes; round-trip decode) before integrating.
+- Firmware build and flashing are owned by `CLAUDE.md` "Building and CI" and `doc/clock-sync-setup.md` section 1.
+- Sanity-check `ClockSyncFrame` with a plain-JVM unit test (encode a known frame, assert the 16 bytes; round-trip decode) before integrating; the sync itself needs hardware (see the design doc's InfiniSim note).
 
 ## v1 limitations
 

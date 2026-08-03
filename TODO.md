@@ -6,7 +6,7 @@ The repo is a personal PineTime/InfiniTime hacking playground; the feature list 
 
 Everything below is code-complete, CI-green, and (except where noted) awaiting a clean on-device pass. Setup steps are in `doc/clock-sync-setup.md`.
 
-One-time migration first: apps installed from CI artifacts built before the stable debug keystore (`9c4afea`) cannot be updated in place — uninstall Gadgetbridge T, Clock T, and Phone T once and install fresh from the `9c4afea` (or newer) run, re-pair the watch in GB T, re-enter the Intent API settings (filter = `00070002-...` and `00080001-...` only), and re-set Phone T as default dialer.
+One-time migration first: apps installed from CI artifacts built before the stable debug keystore (`9c4afea`) cannot be updated in place — uninstall Gadgetbridge T, Clock T, and Phone T once, install fresh from the `9c4afea` (or newer) run, and redo the setup per the runbook's heads-up and section 2.
 
 Verification checklist, per feature:
 

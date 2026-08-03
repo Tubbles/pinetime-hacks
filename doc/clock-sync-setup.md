@@ -8,15 +8,7 @@ APK updates from CI: all three app artifacts (Gadgetbridge T, Clock T, Phone T) 
 
 ## 1. Watch firmware (OTA)
 
-The firmware changes live on the InfiniTime submodule branch `clock-sync` (base 1.16.1). Build the OTA DFU package with the official image (rootless podman needs `--userns=keep-id`):
-
-```
-podman run --rm --userns=keep-id --security-opt label=disable \
-  -v <repo>/InfiniTime:/sources docker.io/infinitime/infinitime-build \
-  /opt/build.sh pinetime-mcuboot-app-dfu
-```
-
-The `pinetime-mcuboot-app-dfu-1.16.1.zip` lands in `InfiniTime/build/output/`. Flash it over the air with Gadgetbridge's file installer (Device -> ... -> Install / the DFU flow). After it reboots, do NOT tap Settings -> Firmware -> Validate until Bluetooth reconnects and a reboot survives with the watch working; if anything is wrong, let the battery drain or use the button rollback (hold on boot until the pine cone is blue) so MCUBoot reverts. The watch keeps its existing resources; no resource reflash is needed.
+The firmware changes live on the InfiniTime submodule branch `clock-sync` (base 1.16.1). The normal source is CI: download the `pinetime-mcuboot-app-dfu` artifact from the latest green Firmware run. For local builds, the command is owned by `CLAUDE.md` "Building and CI". Flash the DFU zip over the air with Gadgetbridge's file installer (Device -> ... -> Install / the DFU flow). After it reboots, do NOT tap Settings -> Firmware -> Validate until Bluetooth reconnects and a reboot survives with the watch working; if anything is wrong, let the battery drain or use the button rollback (hold on boot until the pine cone is blue) so MCUBoot reverts. The watch keeps its existing resources; no resource reflash is needed.
 
 ## 2. Gadgetbridge T (the Gadgetbridge fork)
 

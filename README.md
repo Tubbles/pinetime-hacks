@@ -19,4 +19,4 @@ Start here:
 - `doc/clock-sync-setup.md` — the runbook: installing and configuring firmware + the three apps.
 - `doc/LOG.md` — the running log of findings, gotchas, and dead ends.
 
-CI on every push builds the OTA firmware (`pinetime-mcuboot-app-dfu`) and the three APKs (`clocksync-clock-apk`, `keytones-dialer-apk`, `gadgetbridge-t-apk`) as downloadable artifacts.
+CI on every push builds the OTA firmware and the three app APKs as downloadable artifacts; the workflow and artifact inventory lives in `CLAUDE.md` "Building and CI".

@@ -1,6 +1,6 @@
 # Design: "time of next event" in the Casio G7710 corner
 
-Status: draft, research phase complete, pending a few on-device checks and decisions (see the end).
+Status: current feature status is tracked in `README.md` (parked; see `TODO.md` for why). This file is the design record, kept for when the feature is un-parked.
 
 Provenance: this synthesizes three research passes done 2026-07-19, preserved verbatim-ish as `doc/research-infinitime.md`, `doc/research-napper.md`, `doc/research-gadgetbridge.md`. Every load-bearing claim there is tagged verified (with a URL or `file:line`) or inference. Read those for the evidence; this file is the plan.
 
@@ -54,7 +54,7 @@ Why this wins over the alternatives (full ranking in research-gadgetbridge §6):
 - Rides Gadgetbridge's managed connection and reconnect logic; no second app fighting for the BLE link.
 - The only custom code is on the firmware side, which we are modifying anyway.
 
-Caveats to design around (all verified): any app on the phone can use the API once enabled (fine for a personal device); there is no delivery queue, so the sender must re-send on Gadgetbridge's `BLUETOOTH_CONNECTED` broadcast or on a timer; and Android's GATT service-discovery cache hides a newly added characteristic until the watch is removed and re-added in Gadgetbridge (research-gadgetbridge §1, FederAndInk lessons). Keep the payload small to stay under the default BLE MTU (the FederAndInk calendar work needed MTU 200 for ~150-byte writes; our payload is a few bytes).
+Caveats to design around (all verified): any app on the phone can use the API once enabled (fine for a personal device); there is no delivery queue, so the sender must re-send on Gadgetbridge's `BLUETOOTH_CONNECTED` broadcast or on a timer; and Android's GATT service-discovery cache hides a newly added characteristic until the cache is cleared — only the Android-settings unpair does that; see `doc/clock-sync-setup.md` section 2 (research-gadgetbridge §1, FederAndInk lessons, later field-corrected). Keep the payload small to stay under the default BLE MTU (the FederAndInk calendar work needed MTU 200 for ~150-byte writes; our payload is a few bytes).
 
 ### The custom InfiniTime service
 
