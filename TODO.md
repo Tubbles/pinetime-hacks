@@ -10,6 +10,7 @@ One-time migration first: apps installed from CI artifacts built before the stab
 
 Verification checklist, per feature:
 
+- DFU reliability fixes: flashing from Gadgetbridge T (run `41ffedc`+) succeeds with no unpair/forget dance (cache refresh before DFU), and after the `e872882` firmware is on, the NEXT flash also goes through cleanly (Service Changed announcement + stock handle positions). Two consecutive clean flashes = the failure class is closed.
 - Disconnect warning buzz (idea 7): two short buzzes when the BLE connection drops, screen stays off; verify it fires when walking out of range and does not fire spuriously mid-connection.
 - Wrist-raise lock (idea 3): raise-lock, button unlock consumed, tap/shake/button wakes stay unlocked, alarm and ringing timer clear the lock, shield indicator on the G7710 face.
 - åäö (idea 5): send a Swedish text through Gadgetbridge T; å/ä/ö render in the notification; a >100-byte message ends cleanly.
