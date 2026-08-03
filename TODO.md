@@ -1,6 +1,6 @@
 # To Do
 
-The repo is a personal PineTime/InfiniTime hacking playground; features and their status are listed in `README.md`/`CLAUDE.md`, finished work is recorded in `doc/LOG.md` and git history. This file holds only what is outstanding.
+The repo is a personal PineTime/InfiniTime hacking playground; the feature list and statuses live in `README.md`, finished work is recorded in `doc/LOG.md` and git history. This file holds only what is outstanding or parked, and the reasoning behind those states.
 
 ## Active: field verification of the implemented features
 

@@ -4,15 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Personal hacking playground for a PineTime smartwatch running InfiniTime, paired to an Android phone (GrapheneOS) running Gadgetbridge. The repo hosts several features, worked one at a time; `TODO.md` tracks current state and what is parked. Undertakings and their status:
-
-1. Clock sync (parked, 2026-08-03 user decision) — the clock app's stopwatch and timer sync with the watch, both directions. Implemented (Clock T fork + the InfiniTime ClockSync BLE service) but field-flaky; the user judged it not worth further debugging for now. Code stays in the tree.
-2. Scheduled brightness + silent mode (planned) — on a watch-configured schedule, switch brightness and toggle silent mode (e.g. dim + silent at night).
-3. Wrist-raise lock (implemented, pending field verification) — waking via raise-wrist shows the screen but rejects touch until the physical button unlocks; shield indicator on the Casio G7710 face.
-4. Next-event corner (parked) — show a "time of next event" (Napper next sleep/wake) in the G7710 bottom-left corner. Parked pending outreach to Napper AB.
-5. Extended-Latin åäö in notifications (implemented, pending field verification) — Latin-1 Supplement glyphs in the UI font + UTF-8-safe truncation.
-6. In-call DTMF key tones (implemented, in field verification) — an InCall watch app (hang up, numberpad, configurable intercom key) so the intercom door can be opened from the watch; spans all four forks.
-7. Disconnect warning buzz (implemented, pending field verification) — two short buzzes when the BLE connection drops, no screen wake.
+Personal hacking playground for a PineTime smartwatch running InfiniTime, paired to an Android phone (GrapheneOS) running Gadgetbridge. The repo hosts several features, worked one at a time. The feature list with each feature's status lives in `README.md` (the single source of truth for it — do not restate it here or anywhere else); outstanding and parked work, with reasoning, lives in `TODO.md`.
 
 Per-feature design docs live in `doc/` (`DESIGN-clock-sync.md`, `DESIGN-lock-screen.md`, `DESIGN-intercom-keytones.md`, `DESIGN.md` for the next-event corner); `doc/clock-sync-setup.md` is the runbook for installing/configuring the whole stack on the phone and watch. Upstream projects are forked with this repo as the master, as git submodules (see Repo layout); the deployed Android apps follow the "T" naming scheme (Clock T, Phone T, Gadgetbridge T) and install alongside their originals.
 
@@ -25,6 +17,8 @@ Project docs live in `doc/` (design documents, research notes, LOG.md); `TODO.md
 You have standing permission to create new documents and set up new processes whenever you notice one is missing, without asking first. When you learn something worth keeping, write it down then and there: design notes and references under `doc/`, outstanding work in `TODO.md`, your own ideas in `SUGGESTIONS.md`. Prefer extending an existing doc over starting a parallel one, and add a pointer from CLAUDE.md or the README when a newcomer should be able to find the new doc.
 
 Close out every work item by documenting it before you commit. Put the learnings, gotchas, dead ends, verified facts, and the reasoning behind decisions in `doc/LOG.md`: the git diff records what changed, the log records what you found out and why. Delete finished items from `TODO.md` once their record is in `doc/LOG.md`, and keep the unfinished ones. The documentation pass is part of the work, not an optional extra.
+
+**Single source of truth.** Every fact lives in exactly one file; every other document links to it instead of restating it. Ownership: the feature list and per-feature status belong to `README.md`; outstanding/parked work and the reasoning behind status changes to `TODO.md`; history and findings to `doc/LOG.md` (an append-only journal — recording an event there is never duplication); setup and configuration steps to `doc/clock-sync-setup.md`. When a status changes, update the owning file and leave the others alone. Writing one decision into three files is the antipattern this rule exists to prevent: every copy is a future inconsistency.
 
 ## Repo layout
 

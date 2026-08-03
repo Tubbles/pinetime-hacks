@@ -4,7 +4,7 @@ Personal hacking playground for a PineTime smartwatch (InfiniTime firmware, Gadg
 
 Features:
 
-1. **Clock sync** (parked) — the clock app's stopwatch and timer sync with the watch in both directions, via a custom InfiniTime ClockSync BLE service and Gadgetbridge's BLE Intent API. Implemented but field-flaky; parked as not worth the debugging effort for now. Design: `doc/DESIGN-clock-sync.md`.
+1. **Clock sync** (parked — see `TODO.md`) — the clock app's stopwatch and timer sync with the watch in both directions, via a custom InfiniTime ClockSync BLE service and Gadgetbridge's BLE Intent API. Design: `doc/DESIGN-clock-sync.md`.
 2. **Scheduled brightness + silent mode** (planned) — watch-configured schedule switches brightness and silent mode.
 3. **Wrist-raise lock** (implemented, pending field verification) — raise-wrist wake shows the screen but rejects touch until the button unlocks. Design: `doc/DESIGN-lock-screen.md`.
 4. **Next-event corner** (parked) — Napper's next sleep/wake time in the Casio G7710 corner. Design: `doc/DESIGN.md`.
