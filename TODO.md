@@ -6,11 +6,11 @@ The repo is a personal PineTime/InfiniTime hacking playground; the feature list 
 
 Everything below is code-complete, CI-green, and (except where noted) awaiting a clean on-device pass. Setup steps are in `doc/clock-sync-setup.md`.
 
-One-time migration first: apps installed from CI artifacts built before the stable debug keystore (`9c4afea`) cannot be updated in place — uninstall Gadgetbridge T, Clock T, and Phone T once, install fresh from the `9c4afea` (or newer) run, and redo the setup per the runbook's heads-up and section 2.
+One-time migration first: apps installed from CI artifacts built before the explicit CI signing (`d0b0a34`) cannot be updated in place — uninstall Gadgetbridge T, Clock T, and Phone T once, install fresh from the `d0b0a34` (or newer) run, and redo the setup per the runbook's heads-up and section 2.
 
 Verification checklist, per feature:
 
-- DFU reliability fixes: flashing from Gadgetbridge T (run `41ffedc`+) succeeds with no unpair/forget dance (cache refresh before DFU), and after the `e872882` firmware is on, the NEXT flash also goes through cleanly (Service Changed announcement + stock handle positions). Two consecutive clean flashes = the failure class is closed.
+- DFU reliability fixes: flashing from Gadgetbridge T (run `d0b0a34`+, which carries the cache refresh) succeeds with no unpair/forget dance, and after the `e872882` firmware is on, the NEXT flash also goes through cleanly (Service Changed announcement + stock handle positions). Two consecutive clean flashes = the failure class is closed.
 - Disconnect warning buzz (idea 7): two short buzzes when the BLE connection drops, screen stays off; verify it fires when walking out of range and does not fire spuriously mid-connection.
 - Wrist-raise lock (idea 3): raise-lock, button unlock consumed, tap/shake/button wakes stay unlocked, alarm and ringing timer clear the lock, shield indicator on the G7710 face.
 - åäö (idea 5): send a Swedish text through Gadgetbridge T; å/ä/ö render in the notification; a >100-byte message ends cleanly.
