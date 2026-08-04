@@ -4,7 +4,7 @@ Status: implemented; current feature status is tracked in `README.md`. This file
 
 ## Goal
 
-When the screen wakes via raise-wrist, show the screen but reject touch input (like a lock screen) until the physical button is pressed, which unlocks it. Waking via the button or a tap must NOT lock. Show a lock indicator on the Casio G7710 face, in the bottom-left corner (the heart-rate/BPM slot, which is free to repurpose).
+When the screen wakes via raise-wrist, show the screen but reject touch input (like a lock screen) until the physical button is pressed, which unlocks it. Waking via the button or a tap must NOT lock. Show a lock indicator on the watch face in the bottom-left corner (the heart-rate/BPM slot, which is free to repurpose) — originally G7710 only; extended to the Digital face 2026-08-04.
 
 ## Why this is clean to build
 
@@ -57,12 +57,12 @@ A single non-persisted runtime bool in `Settings` (`SetLocked`/`IsLocked`), mode
 
 Clear it in `GoToSleep()` (`:437-453`) so every entry into sleep leaves it clean — this closes the gap where a locked screen times out and is later woken by the button: that press breaks at `:300` before the unlock funnel runs, so without the sleep-clear a button-wake would come up locked. The same function covers AOD entry.
 
-### 5. G7710 lock indicator
-The bottom-left slot is `heartbeatIcon` + `heartbeatValue` (`WatchFaceCasioStyleG7710.cpp:151-159`); when HR is not running it is dimmed and blank (`:294-305`). Add a `Utility::DirtyValue<bool> lockedState`; in `Refresh()`, when locked set `heartbeatIcon` to a lock glyph in full color, else fall back to the existing HR logic.
+### 5. Watch-face lock indicator (G7710 + Digital)
+The bottom-left slot is `heartbeatIcon` + `heartbeatValue` (same layout on both faces; G7710: `WatchFaceCasioStyleG7710.cpp:151-159`, dimmed and blank when HR is not running, `:294-305`). Add a `Utility::DirtyValue<bool> lockedState`; in `Refresh()`, when locked set `heartbeatIcon` to the lock glyph in full color, else fall back to the existing HR logic. The Digital face mirrors the same pattern (added 2026-08-04); its padlock paints white, matching that face's default text color.
 
-Glyph: `Symbols.h` has no padlock, but `Symbols::shieldAlt` (U+F3ED, `Symbols.h:11`) exists and is confirmed present in the font the label actually uses: `heartbeatIcon` has no font override, so it renders with `theme.font_normal = jetbrains_mono_bold_20` (`InfiniTimeTheme.cpp:222`), whose FontAwesome range ends `..., 0xf1ec, 0xf55a, 0xf3ed` (`src/displayapp/fonts/fonts.json:10` — note the full path; the same-named `src/resources/fonts.json` holds only watch-face fonts). Recommended for v1: reuse `shieldAlt`. For a true padlock, add U+F023 to that range, regenerate with `fonts/generate.py`, and add a `lock` symbol.
+Glyph: `Symbols::lock` (fa-lock U+F023, sourced 2026-08-04 into the FontAwesome range of `jetbrains_mono_bold_20` — `src/displayapp/fonts/fonts.json:10`; note the full path, the same-named `src/resources/fonts.json` holds only watch-face fonts). That is the font the labels actually use: `heartbeatIcon` has no font override, so it renders with `theme.font_normal = jetbrains_mono_bold_20` (`InfiniTimeTheme.cpp:222`). v1 shipped with `Symbols::shieldAlt` (U+F3ED) because it was already in the font; the padlock replaced it on both faces once the glyph was added (fonts regenerate automatically at build time via `fonts/generate.py`).
 
-Restore on unlock: the ctor sets `heartbeatIcon` to `Symbols::heartBeat` once (`:152`), so `Refresh()` must not only swap in `shieldAlt` while locked but also explicitly restore `heartBeat` when the lock clears — otherwise the shield sticks until the screen is recreated.
+Restore on unlock: the ctor sets `heartbeatIcon` to `Symbols::heartBeat` once (`:152`), so `Refresh()` must not only swap in the lock glyph while locked but also explicitly restore `heartBeat` when the lock clears — otherwise the padlock sticks until the screen is recreated.
 
 Coexistence: the lock glyph and the HR icon share the same slot; lock wins while locked (HR suppressed for the lock's short duration). Any future use of that corner (e.g. the parked next-event idea) must check the lock flag first. If simultaneous display is ever needed, add a separate small `lockIcon` label instead of repurposing `heartbeatIcon`.
 
@@ -71,17 +71,17 @@ Coexistence: the lock glyph and the HR icon share the same slot; lock wins while
 1. `src/components/settings/Settings.h` — runtime-only `bool locked = false;` (outside `SettingsData`, next to `bleRadioEnabled`) + `SetLocked`/`IsLocked`.
 2. `src/systemtask/SystemTask.cpp` — set lock on raise-from-sleep in `UpdateMotion()`; reject touch in the `OnTouchEvent` handler; consume-and-unlock in `HandleButtonAction()` (after the `NotifyDeviceActivity` push); clear in `GoToSleep()` and in `SetOffAlarm`.
 3. `src/displayapp/DisplayApp.cpp` — clear the lock in the `TimerDone` handler (timer expiry, see Decisions).
-3. `src/displayapp/screens/WatchFaceCasioStyleG7710.{h,cpp}` — add `DirtyValue<bool> lockedState`; `Refresh()` swaps `heartbeatIcon` to `shieldAlt` while locked and restores `heartBeat` when it clears.
-4. `src/displayapp/screens/Symbols.h` — no change (reuse `shieldAlt`); only a true padlock needs `src/displayapp/fonts/fonts.json` + regenerate.
+3. `src/displayapp/screens/WatchFaceCasioStyleG7710.{h,cpp}` and `WatchFaceDigital.{h,cpp}` — add `DirtyValue<bool> lockedState`; `Refresh()` swaps `heartbeatIcon` to `Symbols::lock` while locked and restores `heartBeat` when it clears.
+4. `src/displayapp/screens/Symbols.h` — `lock` = U+F023, backed by the codepoint in `src/displayapp/fonts/fonts.json` (fonts regenerate at build time).
 
 ## Decisions (recommended defaults; adjust as you like)
 
 - Lock-state storage: single runtime Settings flag (see section 4).
-- Indicator glyph: reuse `shieldAlt` for v1; true padlock is optional polish.
+- Indicator glyph: v1 reused `shieldAlt` (already in the font); replaced by a true padlock (`Symbols::lock`, U+F023) on 2026-08-04.
 - Alarm while locked (highest-risk interaction): an alarm wakes and loads the Alarm screen, dismissable by touch or by the physical button (`Alarm.cpp:142-147, 171-181`) — but while locked, touch is blocked AND the button is consumed by the unlock funnel, so both routes are dead. Clear the lock when an alarm fires (`SetOffAlarm`, `SystemTask.cpp:239-242`).
 - Timer expiry while locked (same hazard, found in the 2026-08-02 re-read): a ringing timer is silenced by touch or by backing out with the button — both blocked while locked (the buzzing does auto-stop after 10 s, `Timer.cpp:128-132`, so it is milder than the alarm). Clear the lock in DisplayApp's `TimerDone` handler (`DisplayApp.cpp:375`), NOT in SystemTask's `Messages::GoToRunning` case: DisplayApp only pushes that message when the display is not Running (`DisplayApp.cpp:376-378`), and the lock can only exist while the display IS Running (raise-wake set it, sleep entry clears it), so a SystemTask-side clear would never fire in the one window that matters. The re-read's original recommendation had exactly this flaw; caught in post-implementation review.
 - Notification while locked: view-only (lock stays; the preview shows but is non-interactive). EXCEPTION, found in the field 2026-08-03: an INCOMING CALL notification clears the lock — it is interactive (answer/reject), and the CallStarted unlock cannot save it because answering is what triggers CallStarted. Same hazard class as the alarm and the ringing timer; this was its missed third instance. Note the converse for consistency: a notification or chime that itself wakes the screen comes up UNLOCKED (`SystemTask.cpp:231-237, 344-359` never set the lock) — only raise-wrist locks, and those wakes are not raise-wrist.
-- Raise-wake onto a non-watchface app: touch is still blocked (the safety goal is met), but there is no lock indicator there (the indicator only exists on the G7710 face). Accept for v1; scoping the lock to the watch face only would need extra `currentApp` plumbing SystemTask doesn't have today. (DisplayApp only resets Launcher/Notifications/QuickSettings/Settings to Clock on sleep, `DisplayApp.cpp:326-332`; other apps persist and can be raise-woken into.)
+- Raise-wake onto a non-watchface app: touch is still blocked (the safety goal is met), but there is no lock indicator there (the indicator only exists on the G7710 and Digital faces). Accept for v1; scoping the lock to the watch face only would need extra `currentApp` plumbing SystemTask doesn't have today. (DisplayApp only resets Launcher/Notifications/QuickSettings/Settings to Clock on sleep, `DisplayApp.cpp:326-332`; other apps persist and can be raise-woken into.)
 - Shake wake stays unlocked (only raise-wrist locks).
 
 ## Residual notes (verified, accepted)

@@ -44,3 +44,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [infinitime][ble] evidence exhausted phone-side; on-watch BLE tracing shipped
 - [2026-08-04](log/2026-08-04.md)
   - [init] log split by date; progressive disclosure written into the methodology
+  - [infinitime] lock indicator: padlock glyph sourced, Digital face covered
