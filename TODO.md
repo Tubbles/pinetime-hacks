@@ -15,6 +15,8 @@ Verification checklist, per feature:
 - Wrist-raise lock (idea 3): raise-lock, button unlock consumed, tap/shake/button wakes stay unlocked, alarm and ringing timer clear the lock, padlock indicator on the G7710 and Digital faces (padlock replaced the v1 shield glyph, unverified on-device).
 - åäö (idea 5): send a Swedish text through Gadgetbridge T; å/ä/ö render in the notification; a >100-byte message ends cleanly.
 - Key tones (idea 6): InCall auto-opens on outgoing and answered incoming calls and closes on hang-up; digits chime in-call; hang-up from the watch works mid-call (needs the Phone T with the 'E' handling, first shipped in run `84c195a`); physical button from the keypad view returns to the in-call view (InfiniTime `a92792be`, unverified); the intercom-key setting shows the key on the main view; the door test.
+- G7710 heap-starvation fix (unverified): after flashing the trace-slimming firmware, the G7710 face's numbers render correctly again, including after leaving the face active for a while. If digits ever degrade to the built-in fallback font (readable but wrong-sized), that is the new clean failure mode — note it, it means the heap got tight again.
+- Analog 12 face (unverified): selectable in Settings → Watch face, numerals 1–12 render around the dial, no seconds hand, hands and date behave like Analog.
 - Gadgetbridge T resilience: entering the Intent API settings + reconnect must no longer stick at "Connecting" (GB T `6f2d749ba`, unverified). If any leg stays dead, enable "Write log files" in GB T, reconnect once, and check for `failed btle action, aborting transaction`.
 
 ## Parked: 1. Clock sync (user decision 2026-08-03)

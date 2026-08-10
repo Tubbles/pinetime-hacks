@@ -49,3 +49,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - [2026-08-10](log/2026-08-10.md)
   - [infinitime] disconnect buzz gated on the notifications-On mode
   - [infinitime] disconnect buzz debounced: 1 s activation, 5 s re-arm
+  - [infinitime] G7710 glitched digits diagnosed: the trace buffers starved the heap
+  - [infinitime] new watch face: Analog 12
