@@ -13,6 +13,7 @@ Features:
 7. **Disconnect warning buzz** (verified in the field 2026-08-10) — two short buzzes when the BLE connection drops, no screen wake; only in the notifications-On mode (silent and sleep modes suppress it). Buzzes 1 s after the drop (a blip that reconnects sooner stays silent) and re-arms only after 5 s of stable connection (reconnect thrash cannot buzz repeatedly).
 8. **Analog 12 watch face** (verified in the field 2026-08-10) — the Analog face without a seconds hand and with numerals 1–12 around the dial.
 9. **Dim notification indicator** (done) — on the G7710, Digital, and Analog 12 faces the "i" shows bright for unread notifications, dim gray when notifications are stored but read, and hides when there are none.
+10. **Secondary watch face** (done) — swipe left on the watch face to peek at Analog 12 (hardcoded); swipe right or the button returns to the primary. Runtime-only, does not survive sleep.
 
 Start here:
 
