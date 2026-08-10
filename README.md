@@ -12,6 +12,7 @@ Features:
 6. **In-call key tones** (verified in the field 2026-08-10) — an in-call watch app with hang-up, DTMF numberpad, and a configurable intercom key, so the intercom door opens from the watch. Design: `doc/DESIGN-intercom-keytones.md`.
 7. **Disconnect warning buzz** (verified in the field 2026-08-10) — two short buzzes when the BLE connection drops, no screen wake; only in the notifications-On mode (silent and sleep modes suppress it). Buzzes 1 s after the drop (a blip that reconnects sooner stays silent) and re-arms only after 5 s of stable connection (reconnect thrash cannot buzz repeatedly).
 8. **Analog 12 watch face** (verified in the field 2026-08-10) — the Analog face without a seconds hand and with numerals 1–12 around the dial.
+9. **Dim notification indicator** (done) — on the G7710, Digital, and Analog 12 faces the "i" shows bright for unread notifications, dim gray when notifications are stored but read, and hides when there are none.
 
 Start here:
 

@@ -55,3 +55,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [process] TODO cleanup: done items closed out
   - [field] verification round: everything passes except one open item
   - [process] GB T resilience verified; verification checklists retired
+  - [infinitime] three-state notification indicator
