@@ -57,3 +57,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [process] GB T resilience verified; verification checklists retired
   - [infinitime] three-state notification indicator
   - [infinitime] secondary watch face via swipe left
+  - [infinitime] notification store 5 → 10
