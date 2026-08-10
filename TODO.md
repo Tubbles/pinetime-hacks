@@ -4,19 +4,14 @@ The repo is a personal PineTime/InfiniTime hacking playground; the feature list 
 
 ## Active: field verification of the implemented features
 
-Everything below is code-complete, CI-green, and (except where noted) awaiting a clean on-device pass. Setup steps are in `doc/clock-sync-setup.md`.
+Everything below is code-complete, CI-green, and awaiting a clean on-device pass. Setup steps are in `doc/clock-sync-setup.md`.
 
-One-time migration first: apps installed from CI artifacts built before the explicit CI signing (`d0b0a34`) cannot be updated in place — uninstall Gadgetbridge T, Clock T, and Phone T once, install fresh from the `d0b0a34` (or newer) run, and redo the setup per the runbook's heads-up and section 2.
-
-Verification checklist, per feature:
-
-- DFU reliability: firmware `ac7d35fb` (tripwire + announce + stock handle layout + CCCD idx fix) is flashed and VALIDATED as of 2026-08-03; the flash that delivered it was not clean (see LOG.md, lingering-DFU-service entry). Acceptance: the NEXT flash from this firmware is boring — starts, transfers, reboots, no dance. If a subscription is ever refused again, read characteristic `00080003` (nRF Connect) and save the bytes; that snapshot is the root-cause evidence.
-- Disconnect warning buzz (idea 7): two short buzzes when the BLE connection drops, screen stays off; verify it fires when walking out of range and does not fire spuriously mid-connection. Also verify the mode gate (unverified): no buzz in silent (bell Off) or Sleep mode, buzz returns in notifications-On. And the timing (unverified): the buzz arrives ~1 s after the drop, a sub-second blip is silent, and a drop within 5 s of a reconnect is silent.
-- Wrist-raise lock (idea 3): raise-lock, button unlock consumed, tap/shake/button wakes stay unlocked, alarm and ringing timer clear the lock, padlock indicator on the G7710 and Digital faces (padlock replaced the v1 shield glyph, unverified on-device).
+- Disconnect warning buzz (idea 7): fires when walking out of range, no spurious buzzes mid-connection; no buzz in silent (bell Off) or Sleep mode, buzz returns in notifications-On; the buzz arrives ~1 s after the drop, a sub-second blip is silent, and a drop within 5 s of a reconnect is silent.
+- Wrist-raise lock (idea 3): raise-lock and button unlock were exercised in the field 2026-08-03; still unverified: alarm, ringing timer, and ringing call clearing the lock, and the padlock indicator on the G7710, Digital, and Analog 12 (bottom-left) faces.
 - åäö (idea 5): send a Swedish text through Gadgetbridge T; å/ä/ö render in the notification; a >100-byte message ends cleanly.
 - Key tones (idea 6): InCall auto-opens on outgoing and answered incoming calls and closes on hang-up; digits chime in-call; hang-up from the watch works mid-call (needs the Phone T with the 'E' handling, first shipped in run `84c195a`); physical button from the keypad view returns to the in-call view (InfiniTime `a92792be`, unverified); the intercom-key setting shows the key on the main view; the door test.
-- G7710 heap-starvation fix (unverified): after flashing the trace-slimming firmware, the G7710 face's numbers render correctly again, including after leaving the face active for a while. If digits ever degrade to the built-in fallback font (readable but wrong-sized), that is the new clean failure mode — note it, it means the heap got tight again.
-- Analog 12 face (unverified): selectable in Settings → Watch face, numerals 1–12 render around the dial, no seconds hand, hands and date behave like Analog. Second cut (also unverified): hands uniformly thin, minute ticks all the way around including 11–12–1, numerals clear of the ticks, padlock appears bottom-left on raise-lock.
+- G7710 heap-starvation fix: the face's numbers render correctly again, including after leaving the face active for a while. If digits ever degrade to the built-in fallback font (readable but wrong-sized), that is the new clean failure mode — note it, it means the heap got tight again.
+- Analog 12 second cut (first cut verified via field feedback 2026-08-10): hands uniformly thin, minute ticks all the way around including 11–12–1, numerals clear of the ticks, padlock bottom-left on raise-lock.
 - Gadgetbridge T resilience: entering the Intent API settings + reconnect must no longer stick at "Connecting" (GB T `6f2d749ba`, unverified). If any leg stays dead, enable "Write log files" in GB T, reconnect once, and check for `failed btle action, aborting transaction`.
 
 ## Parked: 1. Clock sync (user decision 2026-08-03)

@@ -52,3 +52,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [infinitime] G7710 glitched digits diagnosed: the trace buffers starved the heap
   - [infinitime] new watch face: Analog 12
   - [infinitime] Analog 12 second cut, from field feedback
+  - [process] TODO cleanup: done items closed out
