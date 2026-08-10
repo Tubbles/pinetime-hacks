@@ -51,3 +51,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [infinitime] disconnect buzz debounced: 1 s activation, 5 s re-arm
   - [infinitime] G7710 glitched digits diagnosed: the trace buffers starved the heap
   - [infinitime] new watch face: Analog 12
+  - [infinitime] Analog 12 second cut, from field feedback
