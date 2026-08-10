@@ -2,17 +2,9 @@
 
 The repo is a personal PineTime/InfiniTime hacking playground; the feature list and statuses live in `README.md`, finished work is recorded in `doc/LOG.md` and git history. This file holds only what is outstanding or parked, and the reasoning behind those states.
 
-## Active: field verification of the implemented features
+## Active: field verification
 
-Everything below is code-complete, CI-green, and awaiting a clean on-device pass. Setup steps are in `doc/clock-sync-setup.md`.
-
-- Disconnect warning buzz (idea 7): fires when walking out of range, no spurious buzzes mid-connection; no buzz in silent (bell Off) or Sleep mode, buzz returns in notifications-On; the buzz arrives ~1 s after the drop, a sub-second blip is silent, and a drop within 5 s of a reconnect is silent.
-- Wrist-raise lock (idea 3): raise-lock and button unlock were exercised in the field 2026-08-03; still unverified: alarm, ringing timer, and ringing call clearing the lock, and the padlock indicator on the G7710, Digital, and Analog 12 (bottom-left) faces.
-- åäö (idea 5): send a Swedish text through Gadgetbridge T; å/ä/ö render in the notification; a >100-byte message ends cleanly.
-- Key tones (idea 6): InCall auto-opens on outgoing and answered incoming calls and closes on hang-up; digits chime in-call; hang-up from the watch works mid-call (needs the Phone T with the 'E' handling, first shipped in run `84c195a`); physical button from the keypad view returns to the in-call view (InfiniTime `a92792be`, unverified); the intercom-key setting shows the key on the main view; the door test.
-- G7710 heap-starvation fix: the face's numbers render correctly again, including after leaving the face active for a while. If digits ever degrade to the built-in fallback font (readable but wrong-sized), that is the new clean failure mode — note it, it means the heap got tight again.
-- Analog 12 second cut (first cut verified via field feedback 2026-08-10): hands uniformly thin, minute ticks all the way around including 11–12–1, numerals clear of the ticks, padlock bottom-left on raise-lock.
-- Gadgetbridge T resilience: entering the Intent API settings + reconnect must no longer stick at "Connecting" (GB T `6f2d749ba`, unverified). If any leg stays dead, enable "Write log files" in GB T, reconnect once, and check for `failed btle action, aborting transaction`.
+- Gadgetbridge T resilience (GB T `6f2d749ba`, unverified): open the Intent API settings screen, then disconnect/reconnect the watch; the connection must reach "Connected" instead of sticking at "Connecting". If any leg stays dead, enable "Write log files" in GB T, reconnect once, and check for `failed btle action, aborting transaction`.
 
 ## Parked: 1. Clock sync (user decision 2026-08-03)
 
