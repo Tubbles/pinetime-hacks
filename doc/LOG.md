@@ -48,3 +48,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [process] CORRECTION: never build locally on this machine
 - [2026-08-10](log/2026-08-10.md)
   - [infinitime] disconnect buzz gated on the notifications-On mode
+  - [infinitime] disconnect buzz debounced: 1 s activation, 5 s re-arm
