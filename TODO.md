@@ -2,6 +2,10 @@
 
 The repo is a personal PineTime/InfiniTime hacking playground; the feature list and statuses live in `README.md`, finished work is recorded in `doc/LOG.md` and git history. This file holds only what is outstanding or parked, and the reasoning behind those states.
 
+## Reopened: DFU reliability (user report 2026-08-11)
+
+Flashing fails again (closed 2026-08-10 after two clean flashes; reopened by report, no cause known yet). Root-causing runs on the on-watch BLE trace, captured per the runbook section 1: BEFORE rebooting the watch (a reboot wipes the RAM ring), write 0x02 to characteristic `00080003` (nRF Connect, GB T disconnected first), page the reads out, decode with `tools/decode_trace.py`. Waiting on: the captured hex, the exact phone-side failure observable (error message / stuck point), the GB T file log of the failed attempt, and whether the watch rebooted since the failure.
+
 ## Parked: 1. Clock sync (user decision 2026-08-03)
 
 Field verdict after the fourth on-device round: "it hardly works at all ... i dont think its useful enough of a feature for this level of issues." The code stays in the tree (firmware service, Clock T bridge, CI) but no further debugging until the user un-parks it. Next diagnostic step if resumed: GB T file log of one phone-side play press (see the runbook troubleshooting section), since the epoch fix (InfiniTime `dfbd9676`) has still never been verified as delivered on-device. Known open v1 limitations (accepted): state characteristic is NOTIFY-only (no READ); timer expiry is not notified (phone derives it); stopwatch laps not synced; a watch-initiated stopwatch run cannot seed the phone's accumulated time; InfiniTime's timer has no pause, so phone-side pause maps to stopped.
