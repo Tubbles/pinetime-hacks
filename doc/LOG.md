@@ -61,3 +61,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - [2026-08-12](log/2026-08-12.md)
   - [gadgetbridge] replay-missed-notifications already exists in stock GB, dismissal pruning included
   - [infinitime] raise-wake algorithm read: it is a rotate-and-settle detector
+  - [infinitime] shake wake now locks like raise wake

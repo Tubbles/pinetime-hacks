@@ -25,7 +25,7 @@ So the detector's signature is **"one smooth ≥45° roll of the forearm, settli
 
 Three independent gates reject waving: the stillness gate (variance stays high the whole time), the roll gate (waving is swinging, not rolling, and under acceleration the angle math is meaningless anyway), and often the level gate (arm ends up sideways). Waving harder makes it worse, not better. The gesture that works: drop the wrist, one smooth rotate-up to reading position, hold for a beat; the wake fires within ~100–300 ms of settling.
 
-**Shake-to-wake is the feature for the "wave at it" instinct**: a separate toggle in Settings → Wake Up (can coexist with Raise Wrist), comparing an EMA of motion speed (`MotionController.cpp:66-72`) against the adjustable threshold in Settings → Shake Threshold. Note: per the lock-screen design, a shake wake comes up UNLOCKED (only raise-wrist locks).
+**Shake-to-wake is the feature for the "wave at it" instinct**: a separate toggle in Settings → Wake Up (can coexist with Raise Wrist), comparing an EMA of motion speed (`MotionController.cpp:66-72`) against the adjustable threshold in Settings → Shake Threshold. Since 2026-08-12 a shake wake locks the screen exactly like a raise wake.
 
 ## Shake-to-wake: the algorithm (`MotionController.cpp:66-72`)
 
@@ -36,7 +36,7 @@ Runs on the same 100 ms poll and shares the notification-Sleep kill switch with 
 - The speed feeds an EMA: `accumulatedSpeed = 0.2·speed + 0.8·accumulatedSpeed` (integer form). One sharp flick gets diluted to 20% and decays ×0.8 per tick (mostly gone in ~0.5 s); sustained shaking for ~300–500 ms ramps the accumulator up.
 - Wake fires when `accumulatedSpeed > shakeWakeThreshold` (persisted setting, default 150, adjustable in Settings → Shake Threshold; `Settings.h:399`). Nothing resets the accumulator on wake — it just decays.
 
-Operationally: two or three brisk shakes across half a second, ideally rotating the face, beat one violent flick. A shake wake comes up UNLOCKED (only raise-wrist sets the lock).
+Operationally: two or three brisk shakes across half a second, ideally rotating the face, beat one violent flick. Since 2026-08-12 a shake wake sets the touch lock exactly like a raise wake; tap, button, and notification wakes stay unlocked.
 
 ## Tuning knobs (firmware, if ever wanted)
 

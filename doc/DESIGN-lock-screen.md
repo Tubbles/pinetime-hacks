@@ -4,7 +4,7 @@ Status: implemented; current feature status is tracked in `README.md`. This file
 
 ## Goal
 
-When the screen wakes via raise-wrist, show the screen but reject touch input (like a lock screen) until the physical button is pressed, which unlocks it. Waking via the button or a tap must NOT lock. Show a lock indicator on the watch face in the bottom-left corner (the heart-rate/BPM slot, which is free to repurpose) — originally G7710 only; extended to the Digital face 2026-08-04.
+When the screen wakes via raise-wrist, show the screen but reject touch input (like a lock screen) until the physical button is pressed, which unlocks it. Waking via the button or a tap must NOT lock. (2026-08-12: shake wake joined raise-wrist — both motion wakes lock.) Show a lock indicator on the watch face in the bottom-left corner (the heart-rate/BPM slot, which is free to repurpose) — originally G7710 only; extended to the Digital face 2026-08-04.
 
 ## Why this is clean to build
 
@@ -14,8 +14,8 @@ The wake reason is not carried in any message; every wake funnels through the re
 
 ## Design
 
-### 1. Set the lock only on raise-wrist wake
-Raise and shake wakes are OR'd into one `GoToRunning()` in `SystemTask::UpdateMotion()` (`SystemTask.cpp:463-470`). Split the condition, capture `IsSleeping()` before waking, and set `locked = true` only when the raise branch fired from sleep:
+### 1. Set the lock on motion wake (raise or shake)
+Raise and shake wakes are OR'd into one `GoToRunning()` in `SystemTask::UpdateMotion()` (`SystemTask.cpp:463-470`). Capture `IsSleeping()` before waking and set `locked = true` when a motion wake fired from sleep (v1 locked only the raise branch; shake joined 2026-08-12 by user decision — both motion gestures share the accidental-trigger problem):
 
 ```cpp
 bool raiseWake = isWakeUpModeOn(RaiseWrist) && motionController.ShouldRaiseWake();
@@ -23,7 +23,7 @@ bool shakeWake = isWakeUpModeOn(Shake) && motionController.CurrentShakeSpeed() >
 if (raiseWake || shakeWake) {
   bool wasSleeping = IsSleeping();
   GoToRunning();
-  if (wasSleeping && raiseWake) locked = true;
+  if (wasSleeping) locked = true;
 }
 ```
 
@@ -80,9 +80,9 @@ Coexistence: the lock glyph and the HR icon share the same slot; lock wins while
 - Indicator glyph: v1 reused `shieldAlt` (already in the font); replaced by a true padlock (`Symbols::lock`, U+F023) on 2026-08-04.
 - Alarm while locked (highest-risk interaction): an alarm wakes and loads the Alarm screen, dismissable by touch or by the physical button (`Alarm.cpp:142-147, 171-181`) — but while locked, touch is blocked AND the button is consumed by the unlock funnel, so both routes are dead. Clear the lock when an alarm fires (`SetOffAlarm`, `SystemTask.cpp:239-242`).
 - Timer expiry while locked (same hazard, found in the 2026-08-02 re-read): a ringing timer is silenced by touch or by backing out with the button — both blocked while locked (the buzzing does auto-stop after 10 s, `Timer.cpp:128-132`, so it is milder than the alarm). Clear the lock in DisplayApp's `TimerDone` handler (`DisplayApp.cpp:375`), NOT in SystemTask's `Messages::GoToRunning` case: DisplayApp only pushes that message when the display is not Running (`DisplayApp.cpp:376-378`), and the lock can only exist while the display IS Running (raise-wake set it, sleep entry clears it), so a SystemTask-side clear would never fire in the one window that matters. The re-read's original recommendation had exactly this flaw; caught in post-implementation review.
-- Notification while locked: view-only (lock stays; the preview shows but is non-interactive). EXCEPTION, found in the field 2026-08-03: an INCOMING CALL notification clears the lock — it is interactive (answer/reject), and the CallStarted unlock cannot save it because answering is what triggers CallStarted. Same hazard class as the alarm and the ringing timer; this was its missed third instance. Note the converse for consistency: a notification or chime that itself wakes the screen comes up UNLOCKED (`SystemTask.cpp:231-237, 344-359` never set the lock) — only raise-wrist locks, and those wakes are not raise-wrist.
+- Notification while locked: view-only (lock stays; the preview shows but is non-interactive). EXCEPTION, found in the field 2026-08-03: an INCOMING CALL notification clears the lock — it is interactive (answer/reject), and the CallStarted unlock cannot save it because answering is what triggers CallStarted. Same hazard class as the alarm and the ringing timer; this was its missed third instance. Note the converse for consistency: a notification or chime that itself wakes the screen comes up UNLOCKED (`SystemTask.cpp:231-237, 344-359` never set the lock) — only motion wakes lock, and those wakes are not motion wakes.
 - Raise-wake onto a non-watchface app: touch is still blocked (the safety goal is met), but there is no lock indicator there (the indicator only exists on the G7710, Digital, and Analog 12 faces). Accept for v1; scoping the lock to the watch face only would need extra `currentApp` plumbing SystemTask doesn't have today. (DisplayApp only resets Launcher/Notifications/QuickSettings/Settings to Clock on sleep, `DisplayApp.cpp:326-332`; other apps persist and can be raise-woken into.)
-- Shake wake stays unlocked (only raise-wrist locks).
+- Shake wake locks like raise-wrist since 2026-08-12 (v1 kept it unlocked); tap, button, and notification wakes stay unlocked.
 
 ## Residual notes (verified, accepted)
 

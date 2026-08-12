@@ -6,7 +6,7 @@ Features:
 
 1. **Clock sync** (parked — see `TODO.md`) — the clock app's stopwatch and timer sync with the watch in both directions, via a custom InfiniTime ClockSync BLE service and Gadgetbridge's BLE Intent API. Design: `doc/DESIGN-clock-sync.md`.
 2. **Scheduled brightness + silent mode** (planned) — watch-configured schedule switches brightness and silent mode.
-3. **Wrist-raise lock** (verified in the field 2026-08-10) — raise-wrist wake shows the screen but rejects touch until the button unlocks. Design: `doc/DESIGN-lock-screen.md`.
+3. **Wrist-raise lock** (verified in the field 2026-08-10; shake wake added to it 2026-08-12) — a motion wake (raise-wrist or shake) shows the screen but rejects touch until the button unlocks. Design: `doc/DESIGN-lock-screen.md`.
 4. **Next-event corner** (parked) — Napper's next sleep/wake time in the Casio G7710 corner. Design: `doc/DESIGN.md`.
 5. **åäö in notifications** (verified in the field 2026-08-10) — Latin-1 Supplement glyphs plus UTF-8-safe message truncation.
 6. **In-call key tones** (verified in the field 2026-08-10) — an in-call watch app with hang-up, DTMF numberpad, and a configurable intercom key, so the intercom door opens from the watch. Design: `doc/DESIGN-intercom-keytones.md`.
