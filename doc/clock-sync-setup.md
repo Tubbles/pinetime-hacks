@@ -17,6 +17,7 @@ When OTA from the running firmware keeps failing (the intermittent CCCD refusal,
 The watch is now managed by Gadgetbridge T (CI artifact `gadgetbridge-t-apk`, applicationId `nodomain.freeyourgadget.gadgetbridge.t`), which adds call-state forwarding so the watch's InCall screen opens and closes itself. Stock F-Droid Gadgetbridge also works for everything except that auto-open/close, but only ONE app may own the PineTime:
 
 - Install Gadgetbridge T, grant it notification access, and pair/add the PineTime in it.
+- In GB T Settings -> Notification settings, enable "Cache while out of range" (stock GB feature, off by default): notifications that arrive while the watch is disconnected are cached (newest 10) and replayed on reconnect, and dismissing a notification on the phone prunes it from the cache so acknowledged notifications never replay. Caveats: the flush buzzes once per replayed notification, and the cache is in-memory (lost if Android kills the GB service).
 - In stock Gadgetbridge (if installed), REMOVE the PineTime device (or at least disable its auto-reconnect): two Gadgetbridges fighting over one watch causes connect/disconnect thrashing. Stock GB may stay for other gadgets.
 - Clock T ships with its deployment config baked in (watch MAC, Gadgetbridge T package, Phone T debug package) — no preference-setting needed. The `clocksync_*` preferences still override if anything changes.
 
