@@ -62,3 +62,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [gadgetbridge] replay-missed-notifications already exists in stock GB, dismissal pruning included
   - [infinitime] raise-wake algorithm read: it is a rotate-and-settle detector
   - [infinitime] shake wake now locks like raise wake
+- [2026-08-15](log/2026-08-15.md)
+  - [gadgetbridge] BLE Intent API settings seed themselves on first connect
