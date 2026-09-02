@@ -66,3 +66,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [gadgetbridge] BLE Intent API settings seed themselves on first connect
 - [2026-09-02](log/2026-09-02.md)
   - [infinitime] G7710 upcoming-alarm indicator
+  - [build] firmware CI broke without a source change; build image now pinned

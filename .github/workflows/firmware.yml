@@ -39,7 +39,7 @@ jobs:
             -e BUILD_DIR=/repo/InfiniTime/build \
             -e DISABLE_POSTBUILD=true \
             -v "$PWD:/repo" \
-            docker.io/infinitime/infinitime-build /opt/build.sh pinetime-mcuboot-app
+            docker.io/infinitime/infinitime-build:sha-f882df9 /opt/build.sh pinetime-mcuboot-app
 
       - uses: actions/upload-artifact@v4
         with:
