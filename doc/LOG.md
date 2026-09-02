@@ -64,3 +64,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [infinitime] shake wake now locks like raise wake
 - [2026-08-15](log/2026-08-15.md)
   - [gadgetbridge] BLE Intent API settings seed themselves on first connect
+- [2026-09-02](log/2026-09-02.md)
+  - [infinitime] G7710 upcoming-alarm indicator

@@ -14,6 +14,7 @@ Features:
 8. **Analog 12 watch face** (verified in the field 2026-08-10) — the Analog face without a seconds hand and with numerals 1–12 around the dial.
 9. **Dim notification indicator** (done) — on the G7710, Digital, and Analog 12 faces the "i" shows bright for unread notifications, dim gray when notifications are stored but read, and hides when there are none.
 10. **Secondary watch face** (done) — swipe left on the watch face to peek at Analog 12 (hardcoded); swipe right or the button returns to the primary. Runtime-only, does not survive sleep.
+11. **Upcoming-alarm indicator** (done) — the Casio face shows a bell + the alarm time (24h) next to the heart-rate/padlock slot while the watch's alarm is armed and due within 24 hours; the heart-rate value takes priority over it while measuring.
 
 Start here:
 
