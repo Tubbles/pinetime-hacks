@@ -70,3 +70,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - [2026-09-14](log/2026-09-14.md)
   - [infinitime] the lock moved from the gesture to the wake
   - [infinitime] exempt apps replace every lock clear
+  - [infinitime] padlock on the Timer screen

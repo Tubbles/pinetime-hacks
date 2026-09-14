@@ -62,6 +62,8 @@ The bottom-left slot is `heartbeatIcon` + `heartbeatValue` (same layout on both 
 
 Glyph: `Symbols::lock` (fa-lock U+F023, sourced 2026-08-04 into the FontAwesome range of `jetbrains_mono_bold_20` — `src/displayapp/fonts/fonts.json:10`; note the full path, the same-named `src/resources/fonts.json` holds only watch-face fonts). That is the font the labels actually use: `heartbeatIcon` has no font override, so it renders with `theme.font_normal = jetbrains_mono_bold_20` (`InfiniTimeTheme.cpp:222`). v1 shipped with `Symbols::shieldAlt` (U+F3ED) because it was already in the font; the padlock replaced it on both faces once the glyph was added (fonts regenerate automatically at build time via `fonts/generate.py`).
 
+(2026-09-14: the Timer app joined the indicator list, see v2.5 below.)
+
 Restore on unlock: the ctor sets `heartbeatIcon` to `Symbols::heartBeat` once (`:152`), so `Refresh()` must not only swap in the lock glyph while locked but also explicitly restore `heartBeat` when the lock clears — otherwise the padlock sticks until the screen is recreated.
 
 Coexistence: the lock glyph and the HR icon share the same slot; lock wins while locked (HR suppressed for the lock's short duration). Any future use of that corner (e.g. the parked next-event idea) must check the lock flag first. If simultaneous display is ever needed, add a separate small `lockIcon` label instead of repurposing `heartbeatIcon`.
@@ -126,3 +128,11 @@ Two things broke when the `SystemTask` gate was removed, both because the touch 
 - The pending gesture in `TouchHandler` is only cleared by `GestureGet()`. Dropping the event without calling it leaves, say, a `SwipeUp` made under the lock sitting in the handler, ready to fire on the first touch after unlocking (a plain press reports gesture `None`, so it does not overwrite). The gate calls `GestureGet()` and throws the result away.
 
 The gate sits before `lvgl.SetNewTouchPoint()`, still the only writer of the state LVGL's indev callback reads, so LVGL sees no press and a locked screen dims and sleeps on the normal inactivity timeout exactly as in v1. The unlocking press still resets that timeout: `SystemTask::HandleButtonAction` pushes `NotifyDeviceActivity` before dispatching the action, and only the action is consumed.
+
+### v2.5 — the padlock reaches the Timer app
+
+The indicator was watch-face only, which the v1 decisions list accepted ("raise-wake onto a non-watchface app: touch is still blocked, but there is no lock indicator there"). The Timer is the one app where that gap bites: the watch falls asleep on a running timer, and a raise puts that screen straight back in front of you with no explanation for why it ignores taps.
+
+Layout, verified rather than assumed: the top-left corner is **not** free. `minuteCounter` is aligned `LV_ALIGN_IN_TOP_LEFT` and `secondCounter` `LV_ALIGN_IN_TOP_RIGHT`, each about 100 px wide (`std::max(number width + 10, 58)` at `jetbrains_mono_76`) and ~186 px tall, and the bottom 50 px is the start/pause button. The free space is the ~38 px strip between the two counters; the colon label below it is centered at y offset -29, so its top edge clears y=0 comfortably. The padlock goes `LV_ALIGN_IN_TOP_MID`. `Counter::HideControls()` only hides the +/- buttons without resizing the container, so this holds in both running and stopped states.
+
+It is driven by plain `settingsController.IsLocked()`, not by `DisplayApp::IsInputLocked()`. It therefore shows while the timer rings, which is a state that accepts touch. Deliberate: it means what it means on a watch face, the watch is locked underneath and will be locked again the moment the ringing is dealt with, and the alternative puts a second copy of the exemption rule inside a screen where it can drift.
