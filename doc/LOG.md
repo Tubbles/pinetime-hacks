@@ -67,3 +67,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - [2026-09-02](log/2026-09-02.md)
   - [infinitime] G7710 upcoming-alarm indicator
   - [build] firmware CI broke without a source change; build image now pinned
+- [2026-09-14](log/2026-09-14.md)
+  - [infinitime] the lock moved from the gesture to the wake

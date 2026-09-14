@@ -6,7 +6,6 @@ The repo is a personal PineTime/InfiniTime hacking playground; the feature list 
 
 Five items, worked in order; each is closed out (firmware pushed, CI green, docs, master bump) before the next starts. Delete each item here as it lands.
 
-1. Every wake source locks (raise, shake, tap/double tap, notification, chime, BLE-triggered) except the physical button, which wakes unlocked as today. Decision: alarm and timer expiry keep clearing the lock (their ringing screens need touch, unchanged behavior).
 2. Exempt apps: Notifications (incl. preview) and InCall are fully usable while locked (touch and physical button behave normally there); the lock state persists underneath, so returning to the watch face is locked and needs the button. Flows: locked → notification → dismiss → face still locked; locked → call rings → answer by touch → InCall with keypad usable → call ends → face still locked. Removes today's incoming-call and CallStarted lock clears. Requires moving the lock's input gating from SystemTask to DisplayApp (which knows the frontmost app).
 3. Settings → "Lock screen" page with a "Use lock screen" checkbox (persisted, default on). Off = no wake ever locks.
 4. Settings → "Raise wrist" page exposing the four ShouldRaiseWake thresholds (roll angle 45°, stillness 56, level 384, tilt 64) with +/- steppers and a Reset-to-defaults button; persisted, appended to SettingsData without a version bump.

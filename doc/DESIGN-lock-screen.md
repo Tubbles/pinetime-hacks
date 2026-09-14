@@ -1,6 +1,6 @@
-# Design: wrist-raise lock screen
+# Design: lock screen
 
-Status: implemented; current feature status is tracked in `README.md`. This file is the design record. Research provenance: an InfiniTime source read on 2026-08-01 against the `clock-sync` branch (base 1.16.1); load-bearing claims are cited to `file:line` below and were verified in that pass. Re-verified 2026-08-02 by an independent adversarial source read: every cited line held; the corrections it produced are folded in below (single-source flag in Settings, timer-expiry clear, unlock placement, glyph restore) and the touch choke point was proven complete (LVGL's indev callback only reads state cached by `DisplayApp`'s `TouchEvent` handler, whose sole producer is the SystemTask push at `SystemTask.cpp:276`; `LittleVgl.cpp:237,271-280`, `DisplayApp.cpp:406`).
+Status: implemented; current feature status is tracked in `README.md`. This file is the design record; sections 1–5 below are v1 as shipped, and the dated amendments at the end supersede them where they differ. Research provenance: an InfiniTime source read on 2026-08-01 against the `clock-sync` branch (base 1.16.1); load-bearing claims are cited to `file:line` below and were verified in that pass. Re-verified 2026-08-02 by an independent adversarial source read: every cited line held; the corrections it produced are folded in below (single-source flag in Settings, timer-expiry clear, unlock placement, glyph restore) and the touch choke point was proven complete (LVGL's indev callback only reads state cached by `DisplayApp`'s `TouchEvent` handler, whose sole producer is the SystemTask push at `SystemTask.cpp:276`; `LittleVgl.cpp:237,271-280`, `DisplayApp.cpp:406`).
 
 ## Goal
 
@@ -89,3 +89,24 @@ Coexistence: the lock glyph and the HR icon share the same slot; lock wins while
 - AOD: `IsSleeping()` is true in `AODSleeping` (`SystemTask.h:100-102`), so a raise from AOD locks as intended; the indicator paints normally once Running.
 - Touch suppression precision: skipping `ProcessTouchInfo` freezes `TouchHandler::IsTouching()` at its last value rather than forcing false. That last value is effectively always false (the pre-sleep touch ended in a release), so DisplayApp's continuous raw-coordinate path (`DisplayApp.cpp:494-496`) stays dormant; only raw-handler apps (InfiniPaint/Paddle) would ever care, and only if raise-woken mid-touch — accepted.
 - BLE-triggered loads while locked (pairing PassKey, firmware update, `SystemTask.cpp:248-251, 370-372`): wake unlocked or appear touch-blocked if a lock is live; both are informational screens, harmless.
+
+## Amendment 2026-09-14 (v2): the lock belongs to the wake, not to the gesture
+
+User request, delivered as a five-item package. This section records each item as it lands; where it contradicts sections 1–5 above, this section is current.
+
+### v2.1 — every wake source locks, except the physical button
+
+The v1 rule ("motion wakes lock, everything else does not") was a statement about which gesture is accidental. It turned out to be the wrong axis: a pocket tap, an arriving notification, the hourly chime and a BLE-driven screen load all put a live touchscreen in front of a sleeve just as readily as a wrist raise does. The rule is now about the transition: **any sleep → running transition locks; the physical button is the one deliberate wake and comes up unlocked.**
+
+Implementation consequence: the set moves from the motion branch in `UpdateMotion()` into `SystemTask::GoToRunning()` itself, after the early `state == Running` return, so it fires exactly once per real wake and no call site needs to know it exists. `IsSleeping()` is `state != Running` (`SystemTask.h`), so "the body of `GoToRunning` ran" and "we were sleeping" are the same predicate — no `wasSleeping` capture is needed any more.
+
+Every pre-existing lock clear had to move to *after* its `GoToRunning()` call, because the wake now sets what they clear:
+
+- `Messages::SetOffAlarm` and `Messages::CallStarted`: clear after the wake.
+- `Messages::OnNewNotification`: the incoming-call clear moves below the `if (IsSleeping()) GoToRunning();`.
+- Button wake: the fast-wake path in `Messages::HandleButtonEvent` clears the lock right after its `GoToRunning()`. This is the only exemption by wake source, and it is expressed as a clear rather than a flag so `GoToRunning` stays reason-agnostic.
+- Timer expiry needs the clear in **two** places, which supersedes the v1 decision note that put it in DisplayApp only. DisplayApp's `TimerDone` clear still covers the display-already-Running case. When the display is asleep it pushes `System::Messages::GoToRunning`, and that clear runs in the display task long before SystemTask dequeues the message, so the wake would re-lock: SystemTask's `Messages::GoToRunning` case clears the lock after calling `GoToRunning()`. The v1 objection to clearing there (the message only arrives when the display is not Running, and the lock could only exist while it was) is exactly what v2 inverted, and that message has a single sender in the tree.
+
+Falls out of the rule rather than being chosen: `Messages::OnChargingEvent` and a wake-lock acquisition (`Messages::DisableSleeping`) also transition out of sleep, so they lock too. Neither screen needs touch, so this is harmless. `GoToSleep()` still clears the lock on every sleep entry.
+
+The lock is set before the `GoToRunning` message is pushed to DisplayApp, so the watch face cannot paint one unlocked frame before the flag arrives.
