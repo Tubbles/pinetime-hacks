@@ -141,7 +141,7 @@ It is driven by plain `settingsController.IsLocked()`, not by `DisplayApp::IsInp
 
 `lockScreenEnabled` (default true) gates the set in `GoToRunning()`. Turning it off also clears a live lock, and that clear lives in `Settings::SetLockScreenEnabled` rather than in the screen, so it holds however the setting is reached.
 
-The persistence rule this project follows, and the trap in it, is worth stating once because items 2.4 and 2.6 append eleven more fields under it:
+The persistence rule this project follows, and the trap in it, is worth stating once because the wrist gesture settings (`doc/research-raise-wake.md`) append eleven more fields under it:
 
 - `settingsVersion` is **not** bumped. A bump makes `LoadSettingsFromFile` reject the stored file and reset every setting on the watch, which is far worse than a new field starting at its default.
 - `LoadSettingsFromFile` reads `sizeof(settings)` bytes into a **default-constructed local** `SettingsData` and copies the whole thing in if the version matches. Bytes the (shorter) file does not reach therefore keep their NSDMI defaults. That is what makes appending safe.

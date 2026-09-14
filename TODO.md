@@ -2,13 +2,6 @@
 
 The repo is a personal PineTime/InfiniTime hacking playground; the feature list and statuses live in `README.md`, finished work is recorded in `doc/LOG.md` and git history. This file holds only what is outstanding or parked, and the reasoning behind those states.
 
-## Active: lock screen v2 (user request 2026-09-14, amended the same day)
-
-Items 1, 2, 3 and 5 landed. The two remaining ones are done together, since they share one slider-page implementation. Each is closed out (firmware pushed, CI green, docs, master bump) before the next starts. Delete each item here as it lands.
-
-4. Settings → "Raise wrist" page exposing the `ShouldRaiseWake` knobs as persisted settings with `lv_slider` rows (not steppers: the level value has a 64–1024 range and nobody wants to press a button hundreds of times) and a Reset button. Six parameters: roll angle 45, stillness 56, level 384, tilt 64, plus the timing window that was fixed in the ring buffer until now — the look-back window (default 8 samples, ~800 ms at the 100 ms poll) and the settle count averaged as "now" (default 2). Needs the ring buffer to become a fixed maximum (e.g. 16) with the window and settle counts parameterized and clamped (settle strictly less than window); the shake-speed span keeps its own 8-sample constant so shake behavior does not move. Six sliders do not fit one 240x240 page, so split or scroll. Suggested ranges: roll 10–90, stillness 8–200, level 64–1024, tilt 0–256, window 3–16, settle 1–4.
-6. Settings → "Lower wrist" page, same pattern (sliders, Reset, parameter struct, no MotionController dependency on Settings) for `ShouldLowerSleep`: side-tilt level 887, side-roll degrees 30, facing level 724, lower-roll degrees 30, history floor 265. Lower wrist is the sleep-on-lower trigger, not a wake source, though stock InfiniTime lists it under Wake Up. `doc/research-raise-wake.md` has no lower-wrist section yet; write one.
-
 ## Reopened: DFU reliability (user report 2026-08-11)
 
 Flashing fails again (closed 2026-08-10 after two clean flashes; reopened by report, no cause known yet). Root-causing runs on the on-watch BLE trace, captured per the runbook section 1: BEFORE rebooting the watch (a reboot wipes the RAM ring), write 0x02 to characteristic `00080003` (nRF Connect, GB T disconnected first), page the reads out, decode with `tools/decode_trace.py`. Waiting on: the captured hex, the exact phone-side failure observable (error message / stuck point), the GB T file log of the failed attempt, and whether the watch rebooted since the failure.
