@@ -2,14 +2,14 @@
 
 The repo is a personal PineTime/InfiniTime hacking playground; the feature list and statuses live in `README.md`, finished work is recorded in `doc/LOG.md` and git history. This file holds only what is outstanding or parked, and the reasoning behind those states.
 
-## Active: lock screen v2 (user request 2026-09-14, delegated to a serial Opus subagent)
+## Active: lock screen v2 (user request 2026-09-14, amended the same day)
 
-Five items, worked in order; each is closed out (firmware pushed, CI green, docs, master bump) before the next starts. Delete each item here as it lands.
+Items 1 and 2 landed. The remaining ones are ordered to minimize total work rather than by number (the amendment lifted the strict order): 5, then 3, then 4 and 6 together, since those two share one slider-page implementation. Each is closed out (firmware pushed, CI green, docs, master bump) before the next starts. Delete each item here as it lands.
 
-2. Exempt apps: Notifications (incl. preview) and InCall are fully usable while locked (touch and physical button behave normally there); the lock state persists underneath, so returning to the watch face is locked and needs the button. Flows: locked → notification → dismiss → face still locked; locked → call rings → answer by touch → InCall with keypad usable → call ends → face still locked. Removes today's incoming-call and CallStarted lock clears. Requires moving the lock's input gating from SystemTask to DisplayApp (which knows the frontmost app).
-3. Settings → "Lock screen" page with a "Use lock screen" checkbox (persisted, default on). Off = no wake ever locks.
-4. Settings → "Raise wrist" page exposing the four ShouldRaiseWake thresholds (roll angle 45°, stillness 56, level 384, tilt 64) with +/- steppers and a Reset-to-defaults button; persisted, appended to SettingsData without a version bump.
-5. Timer app: padlock indicator while locked (raise-wake into a running timer shows the lock, button unlocks, as today minus the indicator).
+5. Timer app: padlock indicator while locked (a raise-wake into a running, non-ringing timer shows the lock, the button unlocks).
+3. Settings → "Lock screen" page with a "Use lock screen" checkbox (persisted, default on). Off = no wake ever locks, and turning it off clears any live lock.
+4. Settings → "Raise wrist" page exposing the `ShouldRaiseWake` knobs as persisted settings with `lv_slider` rows (not steppers: the level value has a 64–1024 range and nobody wants to press a button hundreds of times) and a Reset button. Six parameters: roll angle 45, stillness 56, level 384, tilt 64, plus the timing window that was fixed in the ring buffer until now — the look-back window (default 8 samples, ~800 ms at the 100 ms poll) and the settle count averaged as "now" (default 2). Needs the ring buffer to become a fixed maximum (e.g. 16) with the window and settle counts parameterized and clamped (settle strictly less than window); the shake-speed span keeps its own 8-sample constant so shake behavior does not move. Six sliders do not fit one 240x240 page, so split or scroll. Suggested ranges: roll 10–90, stillness 8–200, level 64–1024, tilt 0–256, window 3–16, settle 1–4.
+6. Settings → "Lower wrist" page, same pattern (sliders, Reset, parameter struct, no MotionController dependency on Settings) for `ShouldLowerSleep`: side-tilt level 887, side-roll degrees 30, facing level 724, lower-roll degrees 30, history floor 265. Lower wrist is the sleep-on-lower trigger, not a wake source, though stock InfiniTime lists it under Wake Up. `doc/research-raise-wake.md` has no lower-wrist section yet; write one.
 
 ## Reopened: DFU reliability (user report 2026-08-11)
 

@@ -100,13 +100,29 @@ The v1 rule ("motion wakes lock, everything else does not") was a statement abou
 
 Implementation consequence: the set moves from the motion branch in `UpdateMotion()` into `SystemTask::GoToRunning()` itself, after the early `state == Running` return, so it fires exactly once per real wake and no call site needs to know it exists. `IsSleeping()` is `state != Running` (`SystemTask.h`), so "the body of `GoToRunning` ran" and "we were sleeping" are the same predicate — no `wasSleeping` capture is needed any more.
 
-Every pre-existing lock clear had to move to *after* its `GoToRunning()` call, because the wake now sets what they clear:
-
-- `Messages::SetOffAlarm` and `Messages::CallStarted`: clear after the wake.
-- `Messages::OnNewNotification`: the incoming-call clear moves below the `if (IsSleeping()) GoToRunning();`.
-- Button wake: the fast-wake path in `Messages::HandleButtonEvent` clears the lock right after its `GoToRunning()`. This is the only exemption by wake source, and it is expressed as a clear rather than a flag so `GoToRunning` stays reason-agnostic.
-- Timer expiry needs the clear in **two** places, which supersedes the v1 decision note that put it in DisplayApp only. DisplayApp's `TimerDone` clear still covers the display-already-Running case. When the display is asleep it pushes `System::Messages::GoToRunning`, and that clear runs in the display task long before SystemTask dequeues the message, so the wake would re-lock: SystemTask's `Messages::GoToRunning` case clears the lock after calling `GoToRunning()`. The v1 objection to clearing there (the message only arrives when the display is not Running, and the lock could only exist while it was) is exactly what v2 inverted, and that message has a single sender in the tree.
+Every pre-existing lock clear had to move to *after* its `GoToRunning()` call, because the wake now sets what they clear. That ordering fix shipped with this item and was then made mostly moot by v2.2, which replaced the clears with app exemptions; what survives is the button wake. The fast-wake path in `Messages::HandleButtonEvent` clears the lock right after its `GoToRunning()`. This is the only exemption by wake source, and it is expressed as a clear rather than a flag so `GoToRunning` stays reason-agnostic.
 
 Falls out of the rule rather than being chosen: `Messages::OnChargingEvent` and a wake-lock acquisition (`Messages::DisableSleeping`) also transition out of sleep, so they lock too. Neither screen needs touch, so this is harmless. `GoToSleep()` still clears the lock on every sleep entry.
 
 The lock is set before the `GoToRunning` message is pushed to DisplayApp, so the watch face cannot paint one unlocked frame before the flag arrives.
+
+### v2.2 — the gate moves to DisplayApp, and some apps are exempt
+
+The v1 gate lived in `SystemTask`, which was the right place as long as the rule was "no touch at all". It is the wrong place for "no touch except on these screens", because `SystemTask` has no idea which app is frontmost: `currentApp` is DisplayApp's. So the touch gate and the button unlock-consume move into `DisplayApp`, while the flag itself stays where it was, in `Settings`, still with a single owner.
+
+Exempt while locked (`DisplayApp::IsInputLocked()`):
+
+- `Apps::Notifications` and `Apps::NotificationsPreview`. An incoming call's answer and reject buttons live on the notification screen, so this is what makes a locked watch answerable.
+- `Apps::InCall`, including the DTMF keypad and the physical-button back-out from it.
+- `Apps::Alarm` while `alarmController.IsAlerting()`, and `Apps::Timer` while its `GetTimerState()` reports expired.
+
+Everything else is gated, and the lock persists across the visit: dismissing a notification or silencing a ringing alarm lands back on a locked watch face, which is the point. Outside their ringing states Alarm and Timer are ordinary locked apps, so a raise-wake into a running timer is locked and shows the padlock (v2.5).
+
+**This supersedes the v1 "Decisions" entries for the alarm, the ringing timer and the incoming call, and the v2.1 ordering work that went with them.** Those three were handled by clearing the lock, which meant a ringing alarm at 3 am left the watch unlocked afterwards. User decision 2026-09-14: they are dismissable under the lock instead, and the lock survives. Nothing clears the lock any more except a button press (consumed by the unlock), sleep entry, and turning the feature off (v2.3).
+
+Two things broke when the `SystemTask` gate was removed, both because the touch panel is read on every event again instead of being skipped while locked:
+
+- `TouchHandler::IsTouching()` is live rather than frozen false. The v1 "Touch suppression precision" residual note leaned on it being frozen to keep DisplayApp's continuous raw-coordinate path (`currentScreen->OnTouchEvent(x, y)` at the bottom of `Refresh()`) dormant. That reasoning is void, so the path got its own lock check; without it InfiniPaint and Paddle would draw through the lock.
+- The pending gesture in `TouchHandler` is only cleared by `GestureGet()`. Dropping the event without calling it leaves, say, a `SwipeUp` made under the lock sitting in the handler, ready to fire on the first touch after unlocking (a plain press reports gesture `None`, so it does not overwrite). The gate calls `GestureGet()` and throws the result away.
+
+The gate sits before `lvgl.SetNewTouchPoint()`, still the only writer of the state LVGL's indev callback reads, so LVGL sees no press and a locked screen dims and sleeps on the normal inactivity timeout exactly as in v1. The unlocking press still resets that timeout: `SystemTask::HandleButtonAction` pushes `NotifyDeviceActivity` before dispatching the action, and only the action is consumed.
