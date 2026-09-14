@@ -1,4 +1,4 @@
-name: Phone app
+name: Clock T
 
 # Builds the ClockSync clock (a BlackyHawky/Clock fork with the bridge) into a
 # debug APK via the Nix android dev shell, and uploads it as an artifact, so a

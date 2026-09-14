@@ -1,4 +1,4 @@
-name: Phone dialer
+name: Phone T
 
 # Builds the key-tones dialer (a Fossify Phone fork with the KeyToneReceiver)
 # into a debug APK via the Nix android dev shell and uploads it, so the
