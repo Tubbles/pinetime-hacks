@@ -78,29 +78,38 @@ Hang-up goes over the pre-existing path: InCall app → `AlertNotificationServic
 
 ## v2: auto-open mode in Phone T (2026-09-14)
 
-User request: a temporary "auto open the intercom door" mode set up directly in the phone app. Set the intercom key once (5), then arm "open the door automatically X times for the next Y hours" (prefilled 1 and 6 h). Per call: let it ring A seconds, answer, wait B seconds, play the key for C milliseconds, then expect the intercom to hang up by itself; while it does not, replay the key every D seconds. A, B, C, D are settings with defaults 2 s, 2 s, 500 ms, 4 s.
+User request: a temporary "auto open the intercom door" mode set up directly in the phone app. Set the intercom key once (5), then arm "open the door automatically X times for the next Y hours" (prefilled 1 and 6 h). Per call: let it ring A seconds, answer, wait B seconds, play the key for C milliseconds, then expect the intercom to hang up by itself; while it does not, replay the key every D seconds. A, B, C, D are settings with defaults 2 s, 2 s, 500 ms, 4 s. Same-day follow-up (user decisions): a caller-number filter ("of course we need a call number filter"), an armed notification with a Turn off action, a Quick Settings tile, a home-screen widget, "Use as intercom number" in the call history, a hang-up timeout, a call-waiting guard, remembered openings/hours, and the last opening shown in the tab.
 
 ### Where it lives
 
 Everything is inside Phone T (`phone/dialer-app`); the watch and Gadgetbridge are not involved, so the mode works with the watch off.
 
-- **Engine**: `helpers/IntercomAutoOpen.kt`, a Kotlin object hooked into `CallService` at the same three points as `WatchCallState` (call added, call state changed, call removed). It tracks one incoming ringing call at a time, snapshots the five settings when it picks the call up, and drives ring -> answer -> wait -> tone -> repeat on a main-looper `Handler`. Disconnect cancels everything.
-- **Armed state**: two prefs, `intercom_auto_open_remaining` (openings left) and `intercom_auto_open_until` (epoch ms deadline). Armed means remaining > 0 and now < until; there is no timer, expiry is evaluated when a call arrives and when the tab draws.
-- **Arming UI**: a fourth main-screen tab, "Intercom" (`fragments/IntercomFragment.kt`, `TAB_INTERCOM = 128`, last in `tabsList`), with the status line, the openings and hours fields, and one button that arms or disarms.
-- **Static settings**: Settings -> Intercom section: the key (radio list of 0-9 * #) and the four timings (`EnterNumberDialog`, non-negative integers).
+- **Engine**: `helpers/IntercomAutoOpen.kt`, a Kotlin object hooked into `CallService` at the same three points as `WatchCallState` (call added, call state changed, call removed). It tracks one incoming ringing call at a time, snapshots the settings when it picks the call up, and drives ring -> answer -> wait -> tone -> repeat on a main-looper `Handler`. Disconnect cancels everything; a hang-up timeout (default 30 s after the first tone, 0 = never) drops the call from this side.
+- **Caller filter**: `intercom_number` pref. Only a call whose number matches it (`PhoneNumberUtils.compare` over normalized numbers, the `RecentCall.doesContainPhoneNumber` test) is handled; a hidden or missing number never matches. Arming without a number is refused, and the tab sends the user to Settings. The number is typed in Settings -> Intercom or taken from a recent call ("Use as intercom number" in the call-history item menu).
+- **Armed state**: two prefs, `intercom_auto_open_remaining` (openings left) and `intercom_auto_open_until` (epoch ms deadline). Armed means remaining > 0 and now < until; expiry is evaluated whenever the state is read, plus one inexact alarm a second past the deadline that redraws the surfaces.
+- **Surfaces**, all fed by `IntercomAutoOpen.refreshSurfaces()`, the one place that brings them in line with the prefs after `arm`, `disarm`, and each counted opening:
+  - the Intercom tab (`fragments/IntercomFragment.kt`, `TAB_INTERCOM = 128`, last in `tabsList`): status, intercom number, last opening, the openings and hours fields (prefilled with the values used last time), one button that arms or disarms;
+  - an ongoing silent notification (`helpers/IntercomArmedNotification.kt`, id 43, channel `intercom_auto_open`) with a "Turn off auto-open" action, timing itself out at the deadline via `setTimeoutAfter`;
+  - a Quick Settings tile (`services/IntercomTileService.kt`) and a home-screen widget (`receivers/IntercomWidgetProvider.kt`, layout `widget_intercom`), both one-tap toggles through `IntercomAutoOpen.toggle()` (arm with the remembered openings and hours, or disarm), showing the short status.
+  - `receivers/IntercomActionReceiver.kt` carries the three broadcast actions: `INTERCOM_DISARM` (notification action), `INTERCOM_TOGGLE` (widget tap), `INTERCOM_REFRESH` (the expiry alarm).
+- **Static settings**: Settings -> Intercom: the number, the key (radio list of 0-9 * #), the four timings and the hang-up timeout (`EnterNumberDialog`, non-negative integers; `EnterPhoneNumberDialog` for the number).
 
 ### Decisions
 
 - **Only the dialer can do this.** Answering and `Call.playDtmfTone` both need the `Call` object, which only the default dialer's `InCallService` holds. Gadgetbridge's `TelecomManager` path cannot inject DTMF at all (fact 5 above).
-- **An opening is counted when the call goes ACTIVE**, not when it arrives, so a caller who hangs up during the ring delay does not consume one. The started flag makes hold/unhold (a second ACTIVE) a no-op.
-- **A manual answer before the ring delay still runs the sequence**: ACTIVE is the trigger, whoever caused it. Arming is a statement that the next caller gets in.
-- **No cap on the repeats** (the user's spec: "continue to send once every D seconds"). The intercom hangs up; a human caller can be hung up on by hand.
-- **Every incoming call is the intercom while armed.** The user asked for no caller filter, so a friend calling inside the window gets auto-answered, fed the key, and consumes an opening. Candidate follow-up in `SUGGESTIONS.md`.
+- **The caller filter is mandatory, not optional.** Auto-answering an arbitrary caller and blasting DTMF at them is exactly what the user rejected, so an empty number blocks arming instead of meaning "any caller". Consequence: an intercom that calls with a hidden number cannot use the mode.
+- **An opening is counted when the call goes ACTIVE**, not when it arrives, so a caller who hangs up during the ring delay does not consume one. The started flag makes hold/unhold (a second ACTIVE) a no-op. The timestamp of that moment is the "last opened" shown in the tab.
+- **A manual answer before the ring delay still runs the sequence**: ACTIVE is the trigger, whoever caused it. Arming is a statement that the next intercom call gets in.
+- **Call waiting is ignored**: a call arriving while another call is up is never auto-answered, since answering would put the other call on hold. The check is `CallManager.getPhoneState() is SingleCall`, which relies on `CallService.onCallAdded` registering the call with `CallManager` before the engine sees it.
+- **The tone loop ends on the intercom's hang-up or on the timeout.** The user's original spec had no cap; the timeout was added as one of the chosen tweaks and defaults to 30 s so a stuck intercom cannot hold the line open.
 - **The tab goes last** so `getDefaultTab()`'s index arithmetic for the first three tabs stays untouched. The two places that assumed "last tab = call history" (the missed-call notification landing tab and the missed-call clear on tab select) now look up the call-history tab's visible index instead.
 - **`TAB_INTERCOM = 128`** sits above every commons `TAB_*` bit (commons goes up to 64 for other Fossify apps) so it can never collide, even though this app never stores those bits.
 - **The tab is on by default** through `ALL_TABS_MASK`, but the mask is only a default: an install that ever saved "Manage shown tabs" keeps its stored mask and has to tick Intercom there once.
+- **Tile and widget carry no logic**: both call `toggle()` and read the prefs back. Quick Settings only redraws a tile it is listening to, so `refreshSurfaces` pokes it with `TileService.requestListeningState`; the widget is redrawn explicitly because Android's own period is 30 minutes. The expiry alarm is a plain inexact `AlarmManager.set` (no exact-alarm permission); Doze can delay it, which only leaves a stale line on a surface nobody is looking at.
+- **RemoteViews tint**: the widget's rounded background is its own `ImageView`, because commons' `applyColorFilter` is `ImageView.setColorFilter` and tinting the row through `View.setBackgroundColor` would discard the rounded shape.
 
 ### Known limitations
 
-- A second incoming call while one is already up (call waiting) is a ringing incoming call like any other: while armed and untracked, it gets answered too, which puts the first call on hold.
-- Nothing shows that the mode is armed outside the tab (no notification, no watch indicator).
+- An intercom that calls with a hidden number cannot be matched, so the mode cannot be armed for it.
+- A reboot clears the ongoing notification; opening the Intercom tab (or any state change) re-posts it. The tile and widget re-read the prefs on their own.
+- Only one intercom number; a building with two door phones would need a list.
