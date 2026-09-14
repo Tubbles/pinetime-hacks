@@ -51,3 +51,11 @@ The digit path is watch -> Gadgetbridge -> clock fork (hub) -> dialer fork -> DT
 - On the watch, Settings -> Intercom picks the key shown directly on the InCall screen (e.g. 5 for the door).
 - Verify: call the phone and answer (on either device); with Gadgetbridge T the watch wakes into the InCall screen by itself, and it dismisses itself when the call ends (the red button must hang up, which also closes the screen). With a call to the intercom active, press the intercom key; the door must open. Without a call, key presses are harmless no-ops. Outgoing calls open the screen too; ringing alone does not (the incoming-call alert handles that).
 - Debug tip: watch a `logcat` filtered on `KeyToneReceiver`/`CallManager`, or call a second phone and listen for the tones.
+
+Auto-open (Phone T, 2026-09-14; design in `doc/DESIGN-intercom-keytones.md` v2):
+
+- Settings -> Intercom: the door key (default 5) and the four timings: ring before answering (2 s), wait after answering (2 s), tone length (500 ms), repeat the tone every (4 s).
+- The Intercom tab (last tab): enter openings (prefilled 1) and hours (prefilled 6), tap "Turn on auto-open". The status line shows the openings left and the deadline; "Turn off auto-open" disarms early. The mode also ends by itself when the openings run out or the deadline passes.
+- While armed, EVERY incoming call is answered after the ring delay and fed the key (there is no caller filter), so disarm before expecting a real call.
+- Missing tab on an existing install: tick Intercom in Settings -> Manage shown tabs. The tab is on by default, but an install that ever saved that dialog keeps its stored selection.
+- Verify: arm with 1 opening, ring the phone from the intercom (or a second phone); the phone must ring for the ring delay, answer by itself, and the door must open (or the second phone must hear the tone repeat every 4 s until it hangs up). Afterwards the tab must read "Auto-open is off".

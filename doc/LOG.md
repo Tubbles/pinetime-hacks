@@ -73,3 +73,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [infinitime] padlock on the Timer screen
   - [infinitime] "Use lock screen" setting, and the SettingsData append trap
   - [infinitime] wrist gesture thresholds become sliders, and a research-doc correction
+  - [phone] intercom auto-open mode in Phone T
