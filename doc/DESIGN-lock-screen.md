@@ -136,3 +136,15 @@ The indicator was watch-face only, which the v1 decisions list accepted ("raise-
 Layout, verified rather than assumed: the top-left corner is **not** free. `minuteCounter` is aligned `LV_ALIGN_IN_TOP_LEFT` and `secondCounter` `LV_ALIGN_IN_TOP_RIGHT`, each about 100 px wide (`std::max(number width + 10, 58)` at `jetbrains_mono_76`) and ~186 px tall, and the bottom 50 px is the start/pause button. The free space is the ~38 px strip between the two counters; the colon label below it is centered at y offset -29, so its top edge clears y=0 comfortably. The padlock goes `LV_ALIGN_IN_TOP_MID`. `Counter::HideControls()` only hides the +/- buttons without resizing the container, so this holds in both running and stopped states.
 
 It is driven by plain `settingsController.IsLocked()`, not by `DisplayApp::IsInputLocked()`. It therefore shows while the timer rings, which is a state that accepts touch. Deliberate: it means what it means on a watch face, the watch is locked underneath and will be locked again the moment the ringing is dealt with, and the alternative puts a second copy of the exemption rule inside a screen where it can drift.
+
+### v2.3 — "Use lock screen", and the rule for appending to SettingsData
+
+`lockScreenEnabled` (default true) gates the set in `GoToRunning()`. Turning it off also clears a live lock, and that clear lives in `Settings::SetLockScreenEnabled` rather than in the screen, so it holds however the setting is reached.
+
+The persistence rule this project follows, and the trap in it, is worth stating once because items 2.4 and 2.6 append eleven more fields under it:
+
+- `settingsVersion` is **not** bumped. A bump makes `LoadSettingsFromFile` reject the stored file and reset every setting on the watch, which is far worse than a new field starting at its default.
+- `LoadSettingsFromFile` reads `sizeof(settings)` bytes into a **default-constructed local** `SettingsData` and copies the whole thing in if the version matches. Bytes the (shorter) file does not reach therefore keep their NSDMI defaults. That is what makes appending safe.
+- **The trap**: "appended at the end" is not the same as "outside the old file". A `bool` appended after the previous last member (`char intercomKey`) is laid out in the previous layout's *trailing padding*, which is inside the old file's length, so it loads whatever byte that file happens to carry there instead of its default. `alignas(4)` on the first appended member avoids this: `SettingsData` is 4-byte aligned (it starts with `uint32_t version`), so the first 4-aligned free offset is exactly the previous `sizeof`, past every byte an older `settings.dat` holds. Everything appended after that first member is safely beyond it too.
+
+The page is a single `lv_checkbox`, modeled on `SettingWakeUp`, with `Symbols::lock` as its icon. It takes the first slot of a fifth settings page (`nScreens` 4 → 5); `List` skips `Apps::None` entries, so the unused slots render as nothing until the motion pages fill them.
