@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Decode an InfiniTime BLE trace (components/trace in the InfiniTime fork).
 
-Input: /trace.bin, or a text file of hex strings as read out of characteristic
-00080003 with nRF Connect (one or more reads, whitespace/dashes/newlines
-ignored), or hex on stdin. The stream is: 'ITRC', uint16 record count, uint16
+Input: /trace.bin, an nRF Connect log export (Log view -> share; only the
+"Read Response received from 00080003-..." lines are used, in order), or a
+text file of bare hex strings as read out of characteristic 00080003 (one or
+more reads, whitespace/dashes/newlines ignored), or hex on stdin. The stream is: 'ITRC', uint16 record count, uint16
 record size, then 12-byte records {uint32 tick, uint8 type, uint8 a, uint16 b,
 uint16 c, uint16 d}, little-endian, oldest first.
 
@@ -24,11 +25,22 @@ TYPES = {
 }
 
 
+NRF_READ_LINE = re.compile(
+    r"Read Response received from 00080003-78fc-48fe-8e23-433b3a1942d0, value: \(0x\) ([0-9A-Fa-f-]+)"
+)
+
+
 def read_bytes(source: str) -> bytes:
     data = open(source, "rb").read() if source else sys.stdin.buffer.read()
     if data[:4] == b"ITRC":
         return data
     text = data.decode(errors="replace")
+    # An nRF Connect log export carries timestamps, UUIDs and prose, all
+    # full of hex digits, so only the read responses of the diagnostic
+    # characteristic count when the text looks like such a log.
+    read_values = NRF_READ_LINE.findall(text)
+    if read_values:
+        text = " ".join(read_values)
     cleaned = re.sub(r"[^0-9a-fA-F]", "", text)
     return bytes.fromhex(cleaned)
 

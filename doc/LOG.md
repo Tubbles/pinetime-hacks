@@ -76,3 +76,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [phone] intercom auto-open mode in Phone T
   - [phone] auto-open round two: filter, surfaces, and a fork-only dialpad bug
   - [build] artifact upload 403 is a GitHub-side flake
+- [2026-09-17](log/2026-09-17.md)
+  - [ble][infinitime] the trace read-out eats itself under Android long reads
