@@ -4,13 +4,12 @@ The repo is a personal PineTime/InfiniTime hacking playground; the feature list 
 
 ## Reopened: DFU reliability (user report 2026-08-11), root cause found 2026-09-17
 
-Root cause (LOG.md 2026-09-17, from the on-watch trace of a failed flash): the DFU control point's CCCD write succeeds, but persisting it overflows NimBLE's 8-entry CCCD store, the overflow handler finds no other peer to evict and returns `BLE_HS_ENOMEM` (6), and the ATT layer sends that number as error 6, REQUEST NOT SUPPORTED, which aborts the DFU. Gadgetbridge T's eight subscriptions (six stock plus this fork's ClockSync and KeyTones) fill the store exactly. Not yet fixed. Work items, in order:
+Root cause (LOG.md 2026-09-17, from the on-watch trace of a failed flash): the DFU control point's CCCD write succeeds, but persisting it overflows NimBLE's 8-entry CCCD store, the overflow handler finds no other peer to evict and returns `BLE_HS_ENOMEM` (6), and the ATT layer sends that number as error 6, REQUEST NOT SUPPORTED, which aborts the DFU. Gadgetbridge T's eight subscriptions (six stock plus this fork's ClockSync and KeyTones) fill the store exactly.
 
-1. Firmware: in `ble_gatts_clt_cfg_access` (vendored NimBLE, `ble_gatts.c`) a failed persist must not fail the CCCD write; keep the subscription, return 0, and emit a trace record so the condition stays visible.
-2. Firmware: raise `BLE_STORE_MAX_CCCDS` (syscfg.h, 8) once `PersistBond` in `NimbleController.cpp` no longer keeps `MAX_CCCDS` copies of the 72-byte `ble_store_value` union on the host task stack (use `ble_store_value_cccd`).
-3. Firmware: `DfuService.cpp` passes `&revision` as the revision characteristic's `.val_handle`, so the served revision is the attribute handle; give it its own handle variable. Upstream candidate.
-4. Firmware, trace tooling: page the 00080003 read-out by `ble_att_mtu(connHandle) - 2` (the runbook's MTU workaround stays until then), and stop tracing the service-discovery terminators (ATT error 0x0a on opcodes 0x04 and 0x08), which fill the 64-slot ring 30 records per discovery.
-5. Flashing the fix: the running firmware refuses the DFU CCCD, so flash through the recovery firmware (runbook section 1, button held on boot until the pine cone is red); it has an empty store.
+Fixed in firmware on 2026-09-17, not yet flashed: InfiniTime `50b477ef` (a failed persist no longer fails the CCCD write; trace record type 8), `2ae6b7ed` (the DFU revision characteristic served its own attribute handle), `0591f122` (trace read-out paged by MTU, discovery terminators no longer traced). Open:
+
+1. Flash the fix: the running firmware refuses the DFU CCCD, so the first flash goes through the recovery firmware (runbook section 1, button held on boot until the pine cone is red), whose store is empty. The item closes when normal OTA from the running firmware has succeeded a few times on the fixed build.
+2. Firmware, optional hardening: raise `BLE_STORE_MAX_CCCDS` (syscfg.h, 8) once `PersistBond` in `NimbleController.cpp` no longer keeps `MAX_CCCDS` copies of the 72-byte `ble_store_value` union on the host task stack (use `ble_store_value_cccd`), and consider never persisting the DFU control point CCCD at all.
 
 Field evidence on file: `tmp/trace.bin` (pulled 2026-09-17 with `tools/pull_watch_file.py`), decoded in the log entry.
 

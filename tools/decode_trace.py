@@ -22,6 +22,7 @@ TYPES = {
     5: ("BOND", lambda a, b, c, d: {1: f"persist cccds={b}", 2: f"restore cccds={b}"}.get(a, f"a={a} b={b}")),
     6: ("DFU", lambda a, b, c, d: f"gatt-op={a} handle=0x{b:04x}"),
     7: ("REVISION_READ", lambda a, b, c, d: f"served=0x{b:04x}"),
+    8: ("CCCD_PERSIST_FAIL", lambda a, b, c, d: f"handle=0x{b:04x} status={c} conn={d}"),
 }
 
 
