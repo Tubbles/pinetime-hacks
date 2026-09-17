@@ -80,3 +80,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [ble][infinitime] the trace read-out eats itself under Android long reads
   - [ble][infinitime][flash] DFU failure root-caused: the CCCD store is full, and NimBLE reports that as ATT error 6
   - [infinitime][flash] the fixes, and what the persist patch changes for other peers
+  - [infinitime] error visibility: event log, watch notifications, log screen

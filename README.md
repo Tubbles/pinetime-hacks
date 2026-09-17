@@ -16,6 +16,7 @@ Features:
 10. **Secondary watch face** (done) — swipe left on the watch face to peek at Analog 12 (hardcoded); swipe right or the button returns to the primary. Runtime-only, does not survive sleep.
 11. **Upcoming-alarm indicator** (done) — the Casio face shows a bell + the alarm time (24h) next to the heart-rate/padlock slot while the watch's alarm is armed and due within 24 hours; the heart-rate value takes priority over it while measuring.
 12. **Wrist gesture tuning** (done) — Settings → Raise wrist and Settings → Lower wrist expose the raise-wake and lower-to-sleep detectors' thresholds as sliders with a Reset button, including the raise detector's timing window. Algorithms and knobs: `doc/research-raise-wake.md`.
+13. **Error visibility** (done 2026-09-17) — rare hard errors (a DFU abort with its state and percentage, a subscription the bond store could not save, the reset reason at every boot) are appended to `/events.log` on the watch, the failures also raise a watch notification with the cause in words, and Settings → Event log shows the log newest first. Design: `doc/DESIGN-error-visibility.md`.
 
 Start here:
 
