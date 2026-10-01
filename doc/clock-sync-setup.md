@@ -60,3 +60,10 @@ Auto-open (Phone T, 2026-09-14; design in `doc/DESIGN-intercom-keytones.md` v2):
 - Only calls from the intercom number are handled; everything else rings as usual. A call arriving while another call is up is never auto-answered.
 - Missing tab on an existing install: tick Intercom in Settings -> Manage shown tabs. The tab is on by default, but an install that ever saved that dialog keeps its stored selection.
 - Verify: set the intercom number, arm with 1 opening, ring the phone from the intercom; the phone must ring for the ring delay, answer by itself, and the door must open (or, with a second phone set as the number, it must hear the tone repeat every 4 s until it hangs up or the timeout drops the call). Afterwards the tab must read "Auto-open is off" and the notification must be gone.
+
+Call screening rules (Phone T, 2026-10-01; design in `doc/DESIGN-call-screening-rules.md`):
+
+- Settings -> Call screening rules. Add rules with the + button: Block or Allow plus a regular expression; the test-number field shows live whether a number matches, in the same +46 form the rules see. Drag the handle to reorder. The last matching rule decides, no match lets the call through. The first non-empty list triggers Android's "set as caller ID and spam app" prompt; accept it, otherwise the rules do nothing.
+- Starter set for "Sweden only": `Block` `.*`, then `Allow` `\+46.*`. Allow rules for known foreign callers go below those (later rules win).
+- Hidden numbers never reach a regex; the "Block hidden numbers" switch at the top of the rules screen blocks them (with the same notification).
+- A blocked call posts a "Call blocked" notification naming the number (or "hidden number") and the rule, and lands in the call history with a blocked icon; the Recents tab's menu has "Blocked calls" with show all, hide blocked, only blocked. Fossify's own blocked-number list still hides its blocks completely.
