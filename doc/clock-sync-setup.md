@@ -67,3 +67,12 @@ Call screening rules (Phone T, 2026-10-01; design in `doc/DESIGN-call-screening-
 - Starter set for "Sweden only": `Block` `.*`, then `Allow` `\+46.*`. Allow rules for known foreign callers go below those (later rules win).
 - Hidden numbers never reach a regex; the "Block hidden numbers" switch at the top of the rules screen blocks them (with the same notification).
 - A blocked call posts a "Call blocked" notification naming the number (or "hidden number") and the rule, and lands in the call history with a blocked icon; the Recents tab's menu has "Blocked calls" with show all, hide blocked, only blocked. Fossify's own blocked-number list still hides its blocks completely.
+- Only one app holds Android's call-screening role. With YACB T installed (below), leave the role with YACB T and Phone T's rules stay dormant.
+
+YACB T (2026-10-01; design in `doc/DESIGN-yacb-rules.md`): the active rule stack, inside a fork of Yet Another Call Blocker so its spam database keeps working alongside the rules.
+
+- Install the CI artifact `yacb-t-apk` (applicationId `com.tubbles.yacb`, installs beside the original YACB). On first start let it download the database (same flow as the original), then set it as the caller ID and spam app when it asks, and disable or uninstall the original YACB so the two do not fight over the role.
+- Rules live where the blacklist was: main menu -> Rules. Each rule is a regular expression matched against the whole number in international form, with an "Allow instead of block" switch and a test-number field in the editor. Rules run top to bottom (arrows reorder), the last match decides, an allow match wins over the spam database's negative rating, contacts are never blocked. Starter set for "Sweden only": `.*` (block), then `\+46.*` (allow).
+- Blocked calls: YACB T's own notification per blocked call names the rule, and its blocked-calls log (main screen) lists every block with the reason. Hidden numbers are handled by YACB's "Block hidden numbers" setting as before.
+- Existing YACB blacklist entries survive an in-place update as block rules in creation order; their old `*`/`#` wildcards are converted to regex at the first start.
+

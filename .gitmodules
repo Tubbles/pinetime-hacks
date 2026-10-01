@@ -18,3 +18,7 @@
 	path = phone/gadgetbridge-app
 	url = https://github.com/Tubbles/Gadgetbridge.git
 	branch = callstate
+[submodule "phone/yacb-app"]
+	path = phone/yacb-app
+	url = https://github.com/Tubbles/YetAnotherCallBlocker.git
+	branch = rules

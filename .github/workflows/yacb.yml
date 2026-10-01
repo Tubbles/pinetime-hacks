@@ -1,0 +1,52 @@
+name: YACB T
+
+# Builds YACB T (the Yet Another Call Blocker fork with the regex rule
+# stack) into a debug APK and uploads it.
+#
+# Not built through the Nix shell: YACB pins AGP 7.0.3 and compile SDK 30,
+# which the Nix SDK (platforms 34 to 36) does not carry, while the runner's
+# preinstalled SDK installs it on demand. Gradle 7.2 comes from the repo's
+# own wrapper, JDK 17 from setup-java (AGP 7.0 needs JDK 11+, and 17 is the
+# newest it accepts).
+
+on:
+  push:
+    branches: [master]
+    paths: ['phone/yacb-app', '.gitmodules', '.github/workflows/yacb.yml']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init the YACB T submodule
+        run: git submodule update --init phone/yacb-app
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      # Same arrangement as the other apps: the committed keystore for a
+      # stable debug signature, the run number for a rising versionCode.
+      - name: Configure stable debug signing and CI versionCode
+        run: |
+          echo "PINETIME_DEBUG_KEYSTORE=$GITHUB_WORKSPACE/.github/debug.keystore" >> "$GITHUB_ENV"
+          echo "PINETIME_CI_VERSION_CODE=${{ github.run_number }}" >> "$GITHUB_ENV"
+
+      - name: Build debug APK
+        run: |
+          cd phone/yacb-app
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --console=plain --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yacb-t-apk
+          path: phone/yacb-app/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

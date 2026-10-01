@@ -1,6 +1,6 @@
 # pinetime-hacks
 
-Personal hacking playground for a PineTime smartwatch (InfiniTime firmware, Gadgetbridge companion on Android/GrapheneOS). Upstream projects are forked as git submodules with this repo as the master; the deployed Android apps follow the "T" naming scheme (Clock T, Phone T, Gadgetbridge T) and install alongside their originals.
+Personal hacking playground for a PineTime smartwatch (InfiniTime firmware, Gadgetbridge companion on Android/GrapheneOS). Upstream projects are forked as git submodules with this repo as the master; the deployed Android apps follow the "T" naming scheme (Clock T, Phone T, Gadgetbridge T, YACB T) and install alongside their originals.
 
 Features:
 
@@ -17,7 +17,7 @@ Features:
 11. **Upcoming-alarm indicator** (done) — the Casio face shows a bell + the alarm time (24h) next to the heart-rate/padlock slot while the watch's alarm is armed and due within 24 hours; the heart-rate value takes priority over it while measuring.
 12. **Wrist gesture tuning** (done) — Settings → Raise wrist and Settings → Lower wrist expose the raise-wake and lower-to-sleep detectors' thresholds as sliders with a Reset button, including the raise detector's timing window. Algorithms and knobs: `doc/research-raise-wake.md`.
 13. **Error visibility** (done 2026-09-17) — rare hard errors (a DFU abort with its state and percentage, a subscription the bond store could not save, the reset reason at every boot) are appended to `/events.log` on the watch, the failures also raise a watch notification with the cause in words, and Settings → Event log shows the log newest first. Design: `doc/DESIGN-error-visibility.md`.
-14. **Call screening rules** (done 2026-10-01) — Phone T blocks or allows incoming calls by an ordered list of regular expressions over the caller's number in international form (+46…); every rule is tried and the last match decides, so `block .*` followed by `allow \+46.*` blocks every foreign number. A switch blocks hidden numbers too. Each blocked call posts a notification with the number and the rule, and lands in the call history with a blocked icon, where the menu can hide or isolate them. Design: `doc/DESIGN-call-screening-rules.md`.
+14. **Call screening rules** (done 2026-10-01; active copy moved to YACB T the same day) — an ordered list of block/allow regular expressions over the caller's number in international form (+46…); every rule is tried and the last match decides, so `block .*` followed by `allow \+46.*` blocks every foreign number. First built into Phone T (`doc/DESIGN-call-screening-rules.md`, kept in the tree, dormant while another app holds the call-screening role), then rebuilt inside **YACB T**, a fork of Yet Another Call Blocker whose crowd-sourced spam database the user keeps: its blacklist became the rule stack (regex engine, allow rules, explicit order, allow beats the database rating, contacts never block), with YACB's own per-call notification and blocked-calls log. Design: `doc/DESIGN-yacb-rules.md`.
 
 Start here:
 

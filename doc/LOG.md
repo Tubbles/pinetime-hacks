@@ -83,3 +83,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [infinitime] error visibility: event log, watch notifications, log screen
 - [2026-10-01](log/2026-10-01.md)
   - [phone] regex call-screening rules, and what Fossify's "drag" adapters actually do
+  - [phone][yacb] the rule stack moves into a YACB fork
