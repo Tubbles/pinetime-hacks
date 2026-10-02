@@ -84,3 +84,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
 - [2026-10-01](log/2026-10-01.md)
   - [phone] regex call-screening rules, and what Fossify's "drag" adapters actually do
   - [phone][yacb] the rule stack moves into a YACB fork
+- [2026-10-02](log/2026-10-02.md)
+  - [phone] reading Perfetto traces from the phone: the lag is memory thrashing
