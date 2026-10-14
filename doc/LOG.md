@@ -86,3 +86,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [phone][yacb] the rule stack moves into a YACB fork
 - [2026-10-02](log/2026-10-02.md)
   - [phone] reading Perfetto traces from the phone: the lag is memory thrashing
+- [2026-10-14](log/2026-10-14.md)
+  - [phone][yacb] a blocked call still rang once: YACB T was in its basic blocking mode, and why the screening role silences the watch too
