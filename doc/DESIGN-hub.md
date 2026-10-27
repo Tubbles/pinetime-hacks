@@ -82,7 +82,7 @@ watch/
 work/
   RefreshWorker          WorkManager: run every integration, send what changed, resend the rest
 ui/
-  one screen: settings (printer URL, watch MAC), status (last poll, last result, last frame), "Refresh now", "Send test event"
+  one screen: settings (printer URL, poll interval), status (last poll, last result, last frame), "Refresh now", "Send test event"
 ```
 
 `WatchCommand` is `SetEvent(utcSeconds, icon)` or `ClearEvent`, and `null` means "no opinion, leave the watch alone". Adding an integration later means one more object in the list and one more source id. The transport, scheduling and UI do not change.
@@ -103,11 +103,13 @@ Rule, in one pure function:
 
 Authorization: none. Moonraker's `trusted_clients` covers `192.168.0.0/16` and `10.0.0.0/8` (homelab template), which is where a phone on the home Wi-Fi sits, and no Moonraker user account exists (user, 2026-10-27), so `force_logins` never engages (it overrides trusted clients only once a user has been created, Moonraker configuration docs). The app sends plain requests and has no credential field.
 
-Scheduling: a WorkManager periodic request at 15 minutes (its minimum), constrained to a connected network. Each run refreshes every integration and re-sends the full desired state, so the periodic run doubles as the reconnect fallback. The printer icon is a 20x20 1-bit bitmap drawn in the app's resources. One HTTP round trip per quarter hour is negligible for the battery.
+Scheduling: a WorkManager periodic request at the poll interval from the settings, default 15 minutes, which is also WorkManager's floor (a shorter entry is raised to it), constrained to a connected network. Changing the setting re-enqueues the request. Each run refreshes every integration and re-sends the full desired state, so the periodic run doubles as the reconnect fallback. The printer icon is a 20x20 1-bit bitmap drawn in the app's resources. One HTTP round trip per quarter hour is negligible for the battery.
+
+Settings are exactly the printer URL (default `http://fluiddpi.local:7125`) and the poll interval (user, 2026-10-27). The watch address is baked in as a constant, `DB:8F:A2:1A:A1:DB`, the way Clock T ships its deployment config, so there is nothing to type at install.
 
 ### What the user sees
 
-Start a print: within 15 minutes (or at once with "Refresh now") the corner shows the printer icon and the finish time, unless the alarm is sooner. The estimate shifts as the print progresses. When the print finishes, is cancelled or paused, the next poll clears the slot. If the phone cannot reach the host, the time stays until it passes. Hub T's own screen shows the last poll's state and the last frame it sent, which is the first place to look when the corner disagrees with Fluidd.
+Start a print: within one poll interval (or at once with "Refresh now") the corner shows the printer icon and the finish time, unless the alarm is sooner. The estimate shifts as the print progresses. When the print finishes, is cancelled or paused, the next poll clears the slot. If the phone cannot reach the host, the time stays until it passes. Hub T's own screen shows the last poll's state and the last frame it sent, which is the first place to look when the corner disagrees with Fluidd.
 
 ## Later: smart apps
 
@@ -128,7 +130,7 @@ Out of scope now. The event service is independent of it, and nothing in this de
 ## Decisions (resolved, user, 2026-10-27)
 
 1. Icon transport: the bitmap travels in the frame, so a new integration never needs a firmware build. Rejected: an icon id selecting a glyph compiled into the symbol font, lighter on the watch but a `fonts.json` edit and a DFU per new icon.
-2. Poll cadence: WorkManager every 15 minutes, nothing running in between. Rejected: a foreground service polling every few minutes while a print runs (fresher, but a permanent notification and more code).
+2. Poll cadence: WorkManager at a user-set interval, default and floor 15 minutes, nothing running in between. Rejected: a foreground service polling every few minutes while a print runs (fresher, but a permanent notification and more code).
 3. Unreachable printer: leave the watch alone, the time expires by itself. Rejected: clearing the corner, which blanks it on every Wi-Fi blip.
 4. Reaching the printer: `fluiddpi.local` on the home Wi-Fi only; away from home the polls fail and the corner keeps whatever it last got. Moonraker is fully open to the LAN (no user account), so the app has no credential field at all. Android resolves `fluiddpi.local` by mDNS on Wi-Fi (see Leg 3); only an always-on VPN would call for the IP in the URL.
 5. Name and package: "Hub T", `com.tubbles.hub`, directory `phone/hub-app/`.
