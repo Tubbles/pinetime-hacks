@@ -79,6 +79,7 @@ watch/
   EventFrame             frame encoder (pure, unit-tested)
   WatchLink              sends a frame through the Intent API, keeps the desired state, resendAll()
   BluetoothConnectedReceiver  ACL_CONNECTED -> delayed resendAll()
+  PollNowReceiver        explicit broadcast com.tubbles.hub.POLL_NOW -> expedited refresh (the nudge, below)
 work/
   RefreshWorker          WorkManager: run every integration, send what changed, resend the rest
 ui/
@@ -105,11 +106,19 @@ Authorization: none. Moonraker's `trusted_clients` covers `192.168.0.0/16` and `
 
 Scheduling: a WorkManager periodic request at the poll interval from the settings, default 15 minutes, which is also WorkManager's floor (a shorter entry is raised to it), constrained to a connected network. Changing the setting re-enqueues the request. Each run refreshes every integration and re-sends the full desired state, so the periodic run doubles as the reconnect fallback. The printer icon is a 20x20 1-bit bitmap drawn in the app's resources. One HTTP round trip per quarter hour is negligible for the battery.
 
+Between polls the phone learns about a print starting or ending through the nudge below, so the interval only bounds how stale the estimate can get, not how late the corner reacts.
+
 Settings are exactly the printer URL (default `http://fluiddpi.local:7125`) and the poll interval (user, 2026-10-27). The watch address is baked in as a constant, `DB:8F:A2:1A:A1:DB`, the way Clock T ships its deployment config, so there is nothing to type at install.
+
+### The nudge from Home Assistant
+
+The phone has no signal of its own that a print started, and a 15-minute period would leave the corner blank for up to 15 minutes into a print. The homelab does have the signal: Moonraker publishes `print_stats.state` to the broker within 5 s (`status_objects`, `status_interval: 5` in `moonraker.conf.j2`) and Home Assistant already acts on it for the power-off and print-finished automations (`doc/printer-power.md` there). One more automation sends the Home Assistant companion app the notification command `command_broadcast_intent` with `intent_package_name: com.tubbles.hub` and `intent_action: com.tubbles.hub.POLL_NOW` whenever the state changes to `printing`, `paused`, `complete`, `cancelled` or `error`. The companion app turns that into an explicit broadcast, which reaches Hub T's manifest receiver whether or not the app is running, and the receiver enqueues an expedited one-shot refresh. The corner then updates within seconds of a print starting, and clears within seconds of it ending. The periodic poll stays as the fallback for a broker or Home Assistant outage, and the watch still only ever receives what a poll of Moonraker says: the nudge carries no data.
+
+The receiver accepts any sender, since the companion app is not signed with our keystore. A stray broadcast can only cause an extra poll. The automation lives in the homelab repository, where a push to `main` is applied as root by ansible-pull, so it goes in as a pull request there.
 
 ### What the user sees
 
-Start a print: within one poll interval (or at once with "Refresh now") the corner shows the printer icon and the finish time, unless the alarm is sooner. The estimate shifts as the print progresses. When the print finishes, is cancelled or paused, the next poll clears the slot. If the phone cannot reach the host, the time stays until it passes. Hub T's own screen shows the last poll's state and the last frame it sent, which is the first place to look when the corner disagrees with Fluidd.
+Start a print: within seconds through the nudge, or within one poll interval without it (or at once with "Refresh now") the corner shows the printer icon and the finish time, unless the alarm is sooner. The estimate shifts as the print progresses. When the print finishes, is cancelled or paused, the next poll clears the slot. If the phone cannot reach the host, the time stays until it passes. Hub T's own screen shows the last poll's state and the last frame it sent, which is the first place to look when the corner disagrees with Fluidd.
 
 ## Later: smart apps
 
@@ -134,3 +143,4 @@ Out of scope now. The event service is independent of it, and nothing in this de
 3. Unreachable printer: leave the watch alone, the time expires by itself. Rejected: clearing the corner, which blanks it on every Wi-Fi blip.
 4. Reaching the printer: `fluiddpi.local` on the home Wi-Fi only; away from home the polls fail and the corner keeps whatever it last got. Moonraker is fully open to the LAN (no user account), so the app has no credential field at all. Android resolves `fluiddpi.local` by mDNS on Wi-Fi (see Leg 3); only an always-on VPN would call for the IP in the URL.
 5. Name and package: "Hub T", `com.tubbles.hub`, directory `phone/hub-app/`.
+6. First reaction to a print starting or ending: the Home Assistant nudge above (user, 2026-10-27). Rejected: a worker that re-enqueues itself every few minutes (twelve wake-ups an hour for nothing, and Doze defers it anyway).
