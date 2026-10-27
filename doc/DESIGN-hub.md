@@ -22,13 +22,13 @@ Three legs, each testable alone. The interfaces between them are a 16-byte-ish f
 - `00060001` Events, WRITE only. No notify, so no CCCD: the bond's CCCD store holds 8 entries and is full (log 2026-09-17), and a write-only characteristic costs it nothing.
 - `00060002` and `00060003` reserved for the remote-app channel (see "Later: smart apps"). Not implemented now.
 
-Event frame (little-endian, one write per event, at most 86 bytes, well inside the 256-byte MTU Gadgetbridge T requests at `PineTimeJFSupport.java:673` and the watch prefers in `syscfg.h`):
+Event frame (little-endian, one write per event, at most 82 bytes, well inside the 256-byte MTU Gadgetbridge T requests at `PineTimeJFSupport.java:673` and the watch prefers in `syscfg.h`):
 
 | Offset | Field |
 |---|---|
 | 0 | version, 1 |
 | 1 | opcode: 1 set, 2 clear this source, 3 clear all |
-| 2 | source id, 1..255, chosen by the phone app (1 = printer) |
+| 2 | source id, 1..255, chosen by the phone app (1 = printer); clear all ignores it |
 | 3 | reserved, 0 |
 | 4..7 | uint32 UTC epoch seconds of the event |
 | 8 | icon width in pixels, 1..24 |
@@ -39,14 +39,14 @@ A clear carries only the first 4 bytes. The watch validates length, version and 
 
 ### Event slots
 
-The service owns a small fixed table, `std::array<EventSlot, 4>`, keyed by source id: UTC seconds, icon dimensions, a 72-byte bitmap, and a valid flag. Roughly 350 bytes of static RAM in total, which per the standing lesson (log 2026-08-10, "static buffers are not free on this platform") comes straight out of the ~39 KiB heap. That is comparable to the notification store growth of 2026-08-10, and accepted. No persistence: the table is RAM only, lost on reboot, and the phone re-sends on every connect (Leg 2). An accessor `Soonest(nowUtc)` returns the valid slot with the smallest future timestamp, if any. Past-dated slots are skipped (they expire by themselves) and overwritten by the next set.
+The service owns a small fixed table, `std::array<EventSlot, 4>`, keyed by source id: UTC seconds, icon dimensions, a 72-byte bitmap, and a valid flag. About 450 bytes of static RAM in total (320 for the slots, the rest the service's UUID and attribute tables), which per the standing lesson (log 2026-08-10, "static buffers are not free on this platform") comes straight out of the ~39 KiB heap. That is comparable to the notification store growth of 2026-08-10, and accepted. No persistence: the table is RAM only, lost on reboot, and the phone re-sends on every connect (Leg 2). An accessor `Soonest(nowUtc)` returns the valid slot with the smallest future timestamp, if any. Past-dated slots are skipped (they expire by themselves) and overwritten by the next set.
 
 ### The corner on the G7710 face
 
 Today `Refresh()` computes `upcomingAlarmMinutes` from `AlarmController` (armed and `SecondsToAlarm() <= 24 h`) and paints `alarmIcon` (the bell glyph) plus `alarmValue` (HH:MM) right of the heart-rate slot. The heart-rate value owns the spot while it is displayed. The change keeps all of that and widens the candidate set:
 
 - Candidates: the alarm as today, and `HubService::Soonest(now)` converted to seconds-to-event. Both must be within 24 h (HH:MM is ambiguous beyond that, the alarm already applies this window). The smaller seconds-to wins.
-- Rendering: the alarm keeps its glyph label. An event is drawn by an `lv_img` object at the same position, sourced from an `lv_img_dsc_t` of format `LV_IMG_CF_INDEXED_1BIT` whose 2-entry palette is {transparent, `color_text`} and whose pixel data points at the slot's bitmap. `LV_IMG_CF_INDEXED` is enabled in `lv_conf.h` (line 227). Alpha formats are not, which is why indexed-1-bit is the format. When the winning slot changes, `lv_img_cache_invalidate_src` on the descriptor before `lv_img_set_src`, or LVGL's 6-entry image cache keeps the old pixels.
+- Rendering: the alarm keeps its glyph label. An event is drawn by an `lv_img` object at the same position, sourced from an `lv_img_dsc_t` of format `LV_IMG_CF_INDEXED_1BIT` whose 2-entry palette is {transparent, `color_text`} and whose pixel data is the face's own copy of the slot's bitmap. `LV_IMG_CF_INDEXED` is enabled in `lv_conf.h` (line 227). Alpha formats are not, which is why indexed-1-bit is the format. When the winning slot changes, `lv_img_cache_invalidate_src` on the descriptor before `lv_img_set_src`, or LVGL's 6-entry image cache keeps the old pixels.
 - Time text: the event's UTC seconds plus `DateTime::UtcOffset()` (quarter hours, `DateTimeController.h:93`) gives local HH:MM, printed into the same `alarmValue` label. The `DirtyValue` grows from minutes-of-day to (source, minutes-of-day) so a switch between two sources at the same minute still repaints the icon.
 - No new setting: the settings menu table is full (20 entries, 2026-09-17), and `doc/DESIGN.md` already chose to hard-code the corner's behaviour.
 
