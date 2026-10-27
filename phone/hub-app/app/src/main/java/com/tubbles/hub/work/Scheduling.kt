@@ -1,6 +1,11 @@
 package com.tubbles.hub.work
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -10,9 +15,10 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.tubbles.hub.SettingsStore
+import com.tubbles.hub.watch.WifiJoinedReceiver
 import java.util.concurrent.TimeUnit
 
-/** The three ways work gets queued (doc/DESIGN-hub.md, Leg 2 and "Scheduling"). */
+/** The ways work gets queued (doc/DESIGN-hub.md, Leg 2 and "Scheduling"). */
 object Scheduling {
     private const val PERIODIC_REFRESH = "periodic-refresh"
     private const val REFRESH_NOW = "refresh-now"
@@ -43,8 +49,8 @@ object Scheduling {
     }
 
     /**
-     * For "Refresh now" and the Home Assistant nudge. REPLACE makes the poll
-     * that runs start after the latest request.
+     * For "Refresh now", the Home Assistant nudge and joining Wi-Fi. REPLACE
+     * makes the poll that runs start after the latest request.
      */
     fun enqueueRefreshNow(context: Context) {
         val request = OneTimeWorkRequestBuilder<RefreshWorker>()
@@ -60,5 +66,51 @@ object Scheduling {
             .build()
         WorkManager.getInstance(context)
             .enqueueUniqueWork(RESEND_AFTER_CONNECT, ExistingWorkPolicy.REPLACE, request)
+    }
+
+    /**
+     * Has the system start [WifiJoinedReceiver] when the phone next joins a
+     * Wi-Fi network, so the corner catches up on coming home. The system
+     * sends the PendingIntent once per registration, and at once when the
+     * request is already met, so this arms only while no validated Wi-Fi
+     * network exists. Registering the same PendingIntent again replaces the
+     * earlier registration. VALIDATED holds the broadcast back until the
+     * Wi-Fi network is validated and already the default one, so the poll
+     * goes out over Wi-Fi (doc/DESIGN-hub.md, "Scheduling").
+     */
+    fun armWifiJoinPoll(context: Context) {
+        val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
+        if (hasValidatedWifi(connectivityManager)) {
+            return
+        }
+        val wifiRequest = NetworkRequest.Builder()
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            .build()
+        val wifiJoinedIntent = PendingIntent.getBroadcast(
+            context, 0, Intent(context, WifiJoinedReceiver::class.java), PendingIntent.FLAG_IMMUTABLE
+        )
+        connectivityManager.registerNetworkCallback(wifiRequest, wifiJoinedIntent)
+    }
+
+    /**
+     * Looks at every network, not the active one, so it is broader than the
+     * request in [armWifiJoinPoll]: whenever the system would fire at once,
+     * this is true and nothing registers. The active network misses Wi-Fi
+     * while this app's network access is blocked (it is then null) or while
+     * a VPN or cellular is the default, and arming would then fire, poll and
+     * arm again in a loop.
+     */
+    private fun hasValidatedWifi(connectivityManager: ConnectivityManager): Boolean {
+        // Deprecated since API 31 but still served, and unlike activeNetwork
+        // it does not hide networks this app is blocked from.
+        @Suppress("DEPRECATION")
+        val networks = connectivityManager.allNetworks
+        return networks.any { network ->
+            val capabilities = connectivityManager.getNetworkCapabilities(network)
+            capabilities != null &&
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        }
     }
 }

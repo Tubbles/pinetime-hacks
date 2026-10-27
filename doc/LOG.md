@@ -92,3 +92,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [design][hub] Hub T and the printer finish time in the next-event corner: what the research settled
   - [firmware][phone][hub] Hub T built: the firmware Hub service, the phone app, the Home Assistant nudge
   - [flash][infinitime][ble] flashing from vaio: a DFU start request hangs a sleeping watch
+  - [phone][hub] Hub T polls as soon as the phone joins Wi-Fi

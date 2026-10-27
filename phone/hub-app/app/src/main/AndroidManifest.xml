@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android only delivers ACL_CONNECTED to holders of this permission. -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- registerNetworkCallback and getNetworkCapabilities for the Wi-Fi join poll. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- Cleartext: Moonraker serves plain http on the LAN
          (doc/DESIGN-hub.md, "The printer integration"). -->
@@ -44,5 +46,12 @@
                 <action android:name="com.tubbles.hub.POLL_NOW" />
             </intent-filter>
         </receiver>
+
+        <!-- Not exported: the system sends it through this app's own
+             PendingIntent, so no other app needs to reach it
+             (doc/DESIGN-hub.md, "Scheduling"). -->
+        <receiver
+            android:name=".watch.WifiJoinedReceiver"
+            android:exported="false" />
     </application>
 </manifest>

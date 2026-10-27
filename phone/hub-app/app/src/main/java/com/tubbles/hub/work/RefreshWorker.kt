@@ -22,6 +22,9 @@ class RefreshWorker(context: Context, parameters: WorkerParameters) : CoroutineW
         val outcomes = integrations().map { integration -> refresh(integration, watchLink) }
         watchLink.resendAll()
         StatusStore(applicationContext).recordPoll(outcomes.joinToString("\n"))
+        // Every kind of poll re-arms the Wi-Fi join trigger while no
+        // validated Wi-Fi exists, which also covers reboots and app updates.
+        Scheduling.armWifiJoinPoll(applicationContext)
         return Result.success()
     }
 

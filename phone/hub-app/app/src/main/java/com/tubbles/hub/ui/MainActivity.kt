@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.send_test_event).setOnClickListener { sendTestEvent() }
         findViewById<Button>(R.id.clear_test_event).setOnClickListener { clearTestEvent() }
         Scheduling.schedulePeriodicRefresh(this)
+        Scheduling.armWifiJoinPoll(this)
         // Only on a fresh start, so a rotation does not ask a second time.
         if (savedInstanceState == null) {
             requestBluetoothPermissionIfMissing()
