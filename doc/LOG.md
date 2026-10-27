@@ -90,3 +90,4 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [phone][yacb] a blocked call still rang once: YACB T was in its basic blocking mode, and why the screening role silences the watch too
 - [2026-10-27](log/2026-10-27.md)
   - [design][hub] Hub T and the printer finish time in the next-event corner: what the research settled
+  - [firmware][phone][hub] Hub T built: the firmware Hub service, the phone app, the Home Assistant nudge

@@ -8,7 +8,7 @@ Root cause (LOG.md 2026-09-17, from the on-watch trace of a failed flash): the D
 
 Fixed in firmware on 2026-09-17, not yet flashed: InfiniTime `50b477ef` (a failed persist no longer fails the CCCD write; trace record type 8), `2ae6b7ed` (the DFU revision characteristic served its own attribute handle), `0591f122` (trace read-out paged by MTU, discovery terminators no longer traced). Open:
 
-1. Flash the fix: the running firmware refuses the DFU CCCD, so the first flash goes through the recovery firmware (runbook section 1, button held on boot until the pine cone is red), whose store is empty. The item closes when normal OTA from the running firmware has succeeded a few times on the fixed build.
+1. Flash the fix: the running firmware refuses the DFU CCCD, so the first flash goes through the recovery firmware (runbook section 1, button held on boot until the pine cone is red), whose store is empty. The item closes when normal OTA from the running firmware has succeeded a few times on the fixed build. The build to flash is InfiniTime `2f6252b3` or later, which also carries the Hub service for the printer finish time (README item 15).
 2. Firmware, optional hardening: raise `BLE_STORE_MAX_CCCDS` (syscfg.h, 8) once `PersistBond` in `NimbleController.cpp` no longer keeps `MAX_CCCDS` copies of the 72-byte `ble_store_value` union on the host task stack (use `ble_store_value_cccd`), and consider never persisting the DFU control point CCCD at all.
 
 Field evidence on file: `tmp/trace.bin` (pulled 2026-09-17 with `tools/pull_watch_file.py`), decoded in the log entry.
@@ -20,10 +20,6 @@ Field verdict after the fourth on-device round: "it hardly works at all ... i do
 ## Planned: 2. Scheduled brightness + silent mode
 
 On a schedule configured entirely on the watch (no hard-coded times), switch screen brightness and toggle silent mode. Example: at 20:00 go to lowest brightness + silent; at 07:00 go to middle brightness + full noise. Configuration lives on the watch. Not designed yet.
-
-## Planned: 3. Printer finish time in the next-event corner + Hub T (designed 2026-10-27)
-
-Design and resolved decisions: `doc/DESIGN-hub.md`. Order of work: the firmware Hub service and the G7710 corner first, exercised with Hub T's "Send test event" button, then the printer integration against the live Moonraker. The firmware lands in the same flash as the open DFU item above (recovery-firmware flash first).
 
 ## Parked: next-event watch face corner (Napper)
 
