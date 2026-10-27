@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hub T</string>
+    <string name="printer_url_label">Printer URL (Moonraker)</string>
+    <string name="poll_interval_label">Poll interval in minutes (at least 15)</string>
+    <string name="save">Save</string>
+    <string name="settings_saved">Saved</string>
+    <string name="error_printer_url">Enter an http:// or https:// URL with a host</string>
+    <string name="error_poll_interval">Enter a whole number of minutes</string>
+    <string name="status_heading">Status</string>
+    <string name="refresh_now">Refresh now</string>
+    <string name="send_test_event">Send test event</string>
+    <string name="clear_test_event">Clear test event</string>
+</resources>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Polls Moonraker on the LAN. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android only delivers ACL_CONNECTED to holders of this permission. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- Cleartext: Moonraker serves plain http on the LAN
+         (doc/DESIGN-hub.md, "The printer integration"). -->
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Hub"
+        android:usesCleartextTraffic="true">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Exported because the broadcast comes from the Bluetooth stack,
+             not from this app. The action is a protected broadcast, so
+             other apps cannot send it. -->
+        <receiver
+            android:name=".watch.BluetoothConnectedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Exported for the Home Assistant companion app, which is not
+             signed with our key. A stray sender can only cause an extra
+             poll (doc/DESIGN-hub.md, "The nudge from Home Assistant"). -->
+        <receiver
+            android:name=".watch.PollNowReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.tubbles.hub.POLL_NOW" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

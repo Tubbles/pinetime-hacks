@@ -104,7 +104,7 @@ Rule, in one pure function:
 
 Authorization: none. Moonraker's `trusted_clients` covers `192.168.0.0/16` and `10.0.0.0/8` (homelab template), which is where a phone on the home Wi-Fi sits, and no Moonraker user account exists (user, 2026-10-27), so `force_logins` never engages (it overrides trusted clients only once a user has been created, Moonraker configuration docs). The app sends plain requests and has no credential field.
 
-Scheduling: a WorkManager periodic request at the poll interval from the settings, default 15 minutes, which is also WorkManager's floor (a shorter entry is raised to it), constrained to a connected network. Changing the setting re-enqueues the request. Each run refreshes every integration and re-sends the full desired state, so the periodic run doubles as the reconnect fallback. The printer icon is a 20x20 1-bit bitmap drawn in the app's resources. One HTTP round trip per quarter hour is negligible for the battery.
+Scheduling: a WorkManager periodic request at the poll interval from the settings, default 15 minutes, which is also WorkManager's floor (a shorter entry is raised to it), constrained to a connected network. Changing the setting re-enqueues the request. Each run refreshes every integration and re-sends the full desired state, so the periodic run doubles as the reconnect fallback. The printer icon is a 20x20 1-bit bitmap drawn in source as twenty lines of `#` and `.` characters. One HTTP round trip per quarter hour is negligible for the battery.
 
 Between polls the phone learns about a print starting or ending through the nudge below, so the interval only bounds how stale the estimate can get, not how late the corner reacts.
 
@@ -133,7 +133,7 @@ Out of scope now. The event service is independent of it, and nothing in this de
 ## Build, flash, test
 
 - Firmware: CI builds the DFU zip as usual (`firmware.yml`). This is the first flash after the CCCD store fix, so it goes through the recovery firmware per `TODO.md`, and the new characteristic appears on the first discovery after it.
-- Hub T: `hub.yml` builds `hub-t-apk`. Install, enter the printer URL and the watch MAC, tap "Send test event": the corner shows the icon and the time, and clears again from the app. Then start a print and watch the time appear and track Fluidd's estimate; let it finish and watch the corner clear.
+- Hub T: `hub.yml` builds `hub-t-apk`. Install, check the printer URL, tap "Send test event": the corner shows the icon and the time, and clears again from the app. Then start a print and watch the time appear and track Fluidd's estimate; let it finish and watch the corner clear.
 - Pure parts tested on the JVM in CI like the ClockSync codec: the ETA rule (progress thresholds, each state, missing metadata) and the frame encoder (lengths, padding, clear frames).
 
 ## Decisions (resolved, user, 2026-10-27)
