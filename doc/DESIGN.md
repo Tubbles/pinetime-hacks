@@ -2,6 +2,8 @@
 
 Status: current feature status is tracked in `README.md` (parked; see `TODO.md` for why). This file is the design record, kept for when the feature is un-parked.
 
+Superseded in part (2026-10-27): Legs 2 and 3 are built by `doc/DESIGN-hub.md`, whose Hub service takes the vendor id `0006` reserved below and generalizes the next-event characteristic to several sources with their own icons. A Napper source, if Leg 1 is ever solved, is one more Hub T integration; nothing watch-side remains specific to Napper.
+
 Provenance: this synthesizes three research passes done 2026-07-19, preserved verbatim-ish as `doc/research-infinitime.md`, `doc/research-napper.md`, `doc/research-gadgetbridge.md`. Every load-bearing claim there is tagged verified (with a URL or `file:line`) or inference. Read those for the evidence; this file is the plan.
 
 ## Goal

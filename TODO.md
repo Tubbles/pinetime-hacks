@@ -21,6 +21,10 @@ Field verdict after the fourth on-device round: "it hardly works at all ... i do
 
 On a schedule configured entirely on the watch (no hard-coded times), switch screen brightness and toggle silent mode. Example: at 20:00 go to lowest brightness + silent; at 07:00 go to middle brightness + full noise. Configuration lives on the watch. Not designed yet.
 
+## Planned: 3. Printer finish time in the next-event corner + Hub T (designed 2026-10-27)
+
+Design and resolved decisions: `doc/DESIGN-hub.md`. Order of work: the firmware Hub service and the G7710 corner first, exercised with Hub T's "Send test event" button, then the printer integration against the live Moonraker. The firmware lands in the same flash as the open DFU item above (recovery-firmware flash first).
+
 ## Parked: next-event watch face corner (Napper)
 
 Design: `doc/DESIGN.md`, research: `doc/research-{infinitime,napper,gadgetbridge}.md`.
