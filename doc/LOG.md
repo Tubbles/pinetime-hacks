@@ -93,3 +93,5 @@ Grep-able log of learnings, decisions, dead ends, and verified facts that the co
   - [firmware][phone][hub] Hub T built: the firmware Hub service, the phone app, the Home Assistant nudge
   - [flash][infinitime][ble] flashing from vaio: a DFU start request hangs a sleeping watch
   - [phone][hub] Hub T polls as soon as the phone joins Wi-Fi
+- [2026-10-29](log/2026-10-29.md)
+  - [phone][hub] Home Assistant nudges Hub T every 5 minutes near the end of a print
